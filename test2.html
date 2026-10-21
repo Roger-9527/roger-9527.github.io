@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基於RWA與NFC易碎防偽技術之金門高粱老酒數位產權交易平台</title>
+  <!-- 1. 引入 Ethers.js v6 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <!-- 2. 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 3. 引入 FontAwesome 圖標 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- 4. 引入 QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- 5. 引入 HTML5-QRCode (相機掃描) -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- 6. 引入 Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            os: {
+              bg: '#0c0d10',
+              panel: '#121318',
+              hover: '#1a1c23',
+              active: '#252832',
+              border: '#22242e',
+              text: '#f3f4f6',
+              muted: '#8a939b',
+              blue: '#2081e2',
+              green: '#10b981',
+              red: '#ef4444'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c0d10; }
+    ::-webkit-scrollbar-thumb { background: #252832; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #373b4a; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.25s ease-out; }
+    .badge-rwa { background: rgba(32, 129, 226, 0.15); color: #2081e2; border: 1px solid rgba(32, 129, 226, 0.3); }
+    .badge-verified { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-mine { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  </style>
+</head>
+<body class="bg-os-bg text-os-text font-sans antialiased h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- 頂部與主體容器 -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- 1. 最左側極簡圖標導覽列 (Icon Sidebar) -->
+    <aside class="w-14 bg-os-bg border-r border-os-border flex flex-col items-center py-3 justify-between z-20 shrink-0">
+      <div class="flex flex-col items-center space-y-4 w-full">
+        <!-- 專題專屬 Logo -->
+        <a href="#" onclick="switchMainTab('MARKET')" class="w-9 h-9 rounded-full bg-amber-600 flex items-center justify-center text-white shadow-lg shadow-amber-600/20 hover:scale-105 transition" title="基於RWA與NFC易碎防偽技術之金門高粱老酒數位產權交易平台">
+          <i class="fa-solid fa-wine-bottle text-lg"></i>
+        </a>
+        
+        <!-- 導覽圖標群 -->
+        <nav class="flex flex-col items-center space-y-2 w-full px-2">
+          <button id="sideBtnMarket" onclick="switchMainTab('MARKET')" class="w-10 h-10 rounded-lg bg-os-active text-white flex items-center justify-center transition relative" title="老酒產權交易市場">
+            <div id="sideIndMarket" class="absolute left-0 w-1 h-5 bg-os-blue rounded-r"></div>
+            <i class="fa-solid fa-store text-base"></i>
+          </button>
+          <button id="sideBtnVault" onclick="switchMainTab('MINE')" class="w-10 h-10 rounded-lg text-os-muted hover:text-white hover:bg-os-hover flex items-center justify-center transition relative" title="我的數位酒庫">
+            <div id="sideIndVault" class="hidden absolute left-0 w-1 h-5 bg-amber-500 rounded-r"></div>
+            <i class="fa-solid fa-vault text-base"></i>
+          </button>
+          <button id="sideBtnAdmin" onclick="switchMainTab('ADMIN')" class="w-10 h-10 rounded-lg text-os-muted hover:text-red-400 hover:bg-os-hover flex items-center justify-center transition relative" title="管理者營運後台">
+            <div id="sideIndAdmin" class="hidden absolute left-0 w-1 h-5 bg-red-500 rounded-r"></div>
+            <i class="fa-solid fa-user-shield text-base"></i>
+          </button>
+          <button onclick="openBankModal()" class="w-10 h-10 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-os-hover flex items-center justify-center transition" title="KB 幣入金中心">
+            <i class="fa-solid fa-coins text-base"></i>
+          </button>
+          <button onclick="toggleScanner('VERIFY')" class="w-10 h-10 rounded-lg text-os-muted hover:text-white hover:bg-os-hover flex items-center justify-center transition" title="相機掃描酒瓶防偽標籤">
+            <i class="fa-solid fa-camera text-base"></i>
+          </button>
+          <button onclick="openWalletModal()" class="w-10 h-10 rounded-lg text-os-muted hover:text-white hover:bg-os-hover flex items-center justify-center transition" title="個人錢包與收款碼">
+            <i class="fa-solid fa-qrcode text-base"></i>
+          </button>
+        </nav>
+      </div>
+
+      <!-- 底部系統設定 -->
+      <div class="flex flex-col items-center space-y-2 w-full px-2">
+        <a id="sidebarEtherscanLink" href="https://sepolia.etherscan.io" target="_blank" class="w-10 h-10 rounded-lg text-os-muted hover:text-white hover:bg-os-hover flex items-center justify-center transition" title="在 Etherscan 查看合約">
+          <i class="fa-solid fa-cube text-base"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- 右側主內容區 -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      <!-- 2. 頂部標題、KB 幣餘額與錢包控制列 -->
+      <header class="h-14 border-b border-os-border px-4 flex items-center justify-between bg-os-bg shrink-0 gap-2">
+        <div class="flex items-center space-x-2 shrink-0">
+          <span class="font-bold text-white text-xs sm:text-sm md:text-base tracking-wide flex items-center">
+            <span class="w-2 h-4 bg-amber-500 rounded-sm mr-2 shrink-0"></span>
+            <span class="truncate max-w-[180px] sm:max-w-[320px] xl:max-w-none">基於RWA與NFC易碎防偽技術之金門高粱老酒數位產權交易平台</span>
+          </span>
+        </div>
+
+        <div class="relative flex-1 max-w-xs hidden lg:block">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-os-muted text-xs"></i>
+          <input 
+            id="searchInput"
+            type="text" 
+            placeholder="檢索老酒、晶片 UID..." 
+            class="w-full bg-os-panel border border-os-border focus:border-os-muted rounded-lg pl-8 pr-6 py-1.5 text-xs text-white placeholder-os-muted focus:outline-none transition"
+          >
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0">
+          <!-- KB 幣入金快速按鈕 -->
+          <button 
+            onclick="openBankModal()" 
+            class="bg-gradient-to-r from-amber-500/20 to-yellow-600/20 hover:from-amber-500/30 border border-amber-500/40 px-3 py-1.5 rounded-lg flex items-center space-x-2 transition shadow-sm"
+          >
+            <i class="fa-solid fa-coins text-amber-400 text-xs"></i>
+            <div class="text-left flex items-center space-x-1.5">
+              <span class="text-[11px] text-amber-200 hidden sm:inline">金庫:</span>
+              <span id="headerKbBalance" class="font-mono text-xs font-bold text-amber-400">0 KB</span>
+            </div>
+            <span class="bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">+入金</span>
+          </button>
+
+          <!-- 網路選擇器 -->
+          <div class="relative hidden sm:flex items-center">
+            <i class="fa-solid fa-network-wired absolute left-2.5 text-os-blue text-xs pointer-events-none"></i>
+            <select id="networkSelector" onchange="handleNetworkChange()" class="bg-os-panel text-white pl-7 pr-2.5 py-1.5 rounded-lg border border-os-border hover:border-os-muted focus:outline-none transition cursor-pointer font-mono text-xs">
+              <option value="sepolia">Sepolia 測試鏈</option>
+              <option value="mainnet">Ethereum 主網</option>
+              <option value="localhost">Localhost</option>
+            </select>
+          </div>
+
+          <!-- 連接錢包按鈕 -->
+          <button id="btnConnect" onclick="connectWallet()" class="px-3.5 py-1.5 rounded-lg bg-os-blue hover:bg-blue-600 text-white text-xs font-semibold transition shadow-lg shadow-blue-500/20 flex items-center space-x-1.5">
+            <i class="fa-solid fa-wallet"></i>
+            <span>連接錢包</span>
+          </button>
+
+          <!-- 已連線狀態 -->
+          <div id="connectedActions" class="hidden flex items-center space-x-1.5 animate-fade-in">
+            <button onclick="openWalletModal()" class="bg-os-panel hover:bg-os-hover px-2.5 py-1.5 rounded-lg flex items-center space-x-2 border border-os-border transition">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="navWalletAddress" class="font-mono text-xs text-white font-medium">0x...</span>
+              <i class="fa-solid fa-qrcode text-os-blue text-xs"></i>
+            </button>
+            <button onclick="disconnect()" class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1.5 rounded-lg text-xs font-semibold transition">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 下方工作區 -->
+      <div class="flex-1 flex overflow-hidden">
+        
+        <!-- 3. 左側面板：資產與導覽切換 -->
+        <aside id="filterSidebar" class="w-64 border-r border-os-border bg-os-bg p-4 overflow-y-auto shrink-0 space-y-5">
+          
+          <!-- KB 幣資產卡片 -->
+          <div class="bg-gradient-to-br from-os-panel to-os-hover p-3.5 rounded-xl border border-amber-500/30 shadow-lg space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-400 flex items-center">
+                <i class="fa-solid fa-sack-dollar mr-1.5"></i>KB 幣金庫資產
+              </span>
+              <span id="networkLabel" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-os-blue/20 text-os-blue">Sepolia</span>
+            </div>
+
+            <div class="bg-os-bg p-2.5 rounded-lg border border-os-border space-y-1.5 font-mono">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-os-muted font-sans">平台可用:</span>
+                <span id="sidebarPlatformKb" class="font-bold text-amber-400 text-sm">0 KB</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-os-muted font-sans">錢包外部:</span>
+                <span id="sidebarWalletKb" class="text-white">0 KB</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px] pt-1 border-t border-os-border">
+                <span class="text-os-muted font-sans">名下產權:</span>
+                <span id="myNftCount" class="font-bold text-emerald-400">0 瓶</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="openBankModal()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold py-1.5 rounded-lg text-xs transition flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-download"></i>
+                <span>入金 / 領幣</span>
+              </button>
+              <button onclick="switchMainTab('ADMIN')" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium py-1.5 rounded-lg text-xs border border-red-500/30 transition flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>營運後台</span>
+              </button>
+            </div>
+          </div>
+
+          <hr class="border-os-border">
+
+          <!-- 檢視模式切換 -->
+          <div>
+            <div class="text-xs font-semibold text-os-muted mb-2.5 tracking-wider">平台導覽</div>
+            <div class="space-y-1.5">
+              <button id="sideTabMarket" onclick="switchMainTab('MARKET')" class="w-full px-3 py-2 rounded-lg bg-os-active text-white text-xs font-medium flex items-center justify-between border border-gray-600 transition">
+                <span class="flex items-center"><i class="fa-solid fa-store text-os-blue mr-2"></i>全站老酒掛單市場</span>
+                <span id="totalMarketCount" class="font-mono text-[11px] bg-os-bg px-1.5 py-0.5 rounded">8</span>
+              </button>
+              <button id="sideTabMine" onclick="switchMainTab('MINE')" class="w-full px-3 py-2 rounded-lg bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center justify-between border border-os-border transition">
+                <span class="flex items-center"><i class="fa-solid fa-vault text-amber-400 mr-2"></i>我的數位酒庫 (資產)</span>
+                <span id="myVaultBadge" class="font-mono text-[11px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">0</span>
+              </button>
+              <button id="sideTabAdmin" onclick="switchMainTab('ADMIN')" class="w-full px-3 py-2 rounded-lg bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center justify-between border border-os-border transition">
+                <span class="flex items-center"><i class="fa-solid fa-user-shield text-red-400 mr-2"></i>管理者營運後台</span>
+                <span class="font-mono text-[11px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">Admin</span>
+              </button>
+            </div>
+          </div>
+
+          <hr class="border-os-border">
+
+          <!-- 類別篩選 -->
+          <div>
+            <div class="text-xs font-semibold text-os-muted mb-2.5">老酒系列篩選</div>
+            <div class="flex flex-wrap gap-1.5" id="categoryGroup">
+              <button onclick="filterCategory('ALL')" class="cat-btn active px-2.5 py-1 rounded-md bg-os-active text-white text-xs font-medium border border-gray-600 transition">所有酒款</button>
+              <button onclick="filterCategory('特級老酒')" class="cat-btn px-2.5 py-1 rounded-md bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs border border-os-border transition">特級老酒</button>
+              <button onclick="filterCategory('陳年高粱')" class="cat-btn px-2.5 py-1 rounded-md bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs border border-os-border transition">陳年高粱</button>
+              <button onclick="filterCategory('絕版黑金剛')" class="cat-btn px-2.5 py-1 rounded-md bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs border border-os-border transition">絕版黑金剛</button>
+              <button onclick="filterCategory('紀念酒款')" class="cat-btn px-2.5 py-1 rounded-md bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs border border-os-border transition">紀念酒款</button>
+            </div>
+          </div>
+
+          <hr class="border-os-border">
+
+          <!-- 即時交易牆 -->
+          <div>
+            <div class="text-xs font-semibold text-os-muted mb-2.5 flex items-center justify-between">
+              <span>跨端即時成交廣播牆</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            </div>
+            <div id="tradeHistoryList" class="space-y-2 text-[11px] font-mono max-h-36 overflow-y-auto pr-1">
+              <div class="bg-os-panel p-2 rounded border border-os-border text-os-muted">
+                等待交易廣播中... (可開兩個瀏覽器視窗測試同步)
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- 4. 右側核心內容區 (市場看板 vs 後台戰情室) -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-os-bg">
+          
+          <!-- 頂部工具列 -->
+          <div class="px-6 py-3 border-b border-os-border flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center space-x-2">
+              <button id="toggleSidebarBtn" class="w-8 h-8 rounded-lg bg-os-panel hover:bg-os-hover border border-os-border flex items-center justify-center text-os-muted hover:text-white text-xs transition">
+                <i class="fa-solid fa-angles-left"></i>
+              </button>
+              <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                <button id="topTabMarket" onclick="switchMainTab('MARKET')" class="px-3.5 py-1.5 rounded-full bg-os-active text-white text-xs font-medium flex items-center space-x-1.5 border border-gray-600 transition">
+                  <i class="fa-solid fa-fire text-amber-400"></i>
+                  <span>全站掛單市場</span>
+                </button>
+                <button id="topTabMine" onclick="switchMainTab('MINE')" class="px-3.5 py-1.5 rounded-full bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center space-x-1.5 border border-os-border transition">
+                  <i class="fa-solid fa-user-check text-emerald-400"></i>
+                  <span>我的數位酒庫</span>
+                </button>
+                <button id="topTabAdmin" onclick="switchMainTab('ADMIN')" class="px-3.5 py-1.5 rounded-full bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center space-x-1.5 border border-os-border transition">
+                  <i class="fa-solid fa-user-shield text-red-400"></i>
+                  <span>營運管理後台</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs font-mono">
+              <span class="text-os-muted">計價:</span>
+              <span class="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">KB Coin</span>
+            </div>
+          </div>
+
+          <!-- 主視圖容器 (視圖 A：市場與酒庫表格 / 視圖 B：管理者營運後台) -->
+          <div id="marketViewContainer" class="flex-1 flex flex-col overflow-hidden">
+            <div class="flex-1 overflow-auto px-6 py-4">
+              <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-os-bg z-10 border-b border-os-border text-[11px] font-semibold text-os-muted uppercase tracking-wider">
+                  <tr>
+                    <th class="py-3 pl-2 pr-3 w-8">#</th>
+                    <th class="py-3 px-2 min-w-[270px]">金門高粱老酒數位產權 (RWA NFT)</th>
+                    <th class="py-3 px-4 text-right cursor-pointer hover:text-white transition" onclick="sortTable('floor')">
+                      直購價 (KB) <i class="fa-solid fa-sort ml-0.5 text-[10px]"></i>
+                    </th>
+                    <th class="py-3 px-4 text-right cursor-pointer hover:text-white transition" onclick="sortTable('change')">
+                      24H 漲跌 <i class="fa-solid fa-sort ml-0.5 text-[10px]"></i>
+                    </th>
+                    <th class="py-3 px-4 text-right">市場最高收購價</th>
+                    <th class="py-3 px-4 text-right">當前持有者</th>
+                    <th class="py-3 px-4 text-right">Token ID</th>
+                    <th class="py-3 pl-4 pr-2 text-right">操作與交易</th>
+                  </tr>
+                </thead>
+                <tbody id="collectionTableBody" class="divide-y divide-os-border/60 text-sm">
+                  <!-- 動態載入 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 管理者營運後台視圖 (預設隱藏) -->
+          <div id="adminViewContainer" class="flex-1 overflow-auto px-6 py-6 hidden space-y-6 animate-fade-in">
+            <div class="flex items-center justify-between border-b border-os-border pb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+                  <i class="fa-solid fa-user-shield text-lg"></i>
+                </div>
+                <div>
+                  <h2 class="text-lg font-bold text-white">金門免稅倉營運管理後台 (Admin Dashboard)</h2>
+                  <p class="text-xs text-os-muted">管理智慧合約狀態、審核實體入庫與處理藏家實體提領申請</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-mono font-bold">
+                權限：合約擁有者 (Owner)
+              </span>
+            </div>
+
+            <!-- 後台數據指標總覽 -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div class="bg-os-panel p-4 rounded-xl border border-os-border">
+                <span class="text-xs text-os-muted block mb-1">平台總交易額</span>
+                <span id="adminTotalVolume" class="font-mono text-xl font-bold text-white">438,000 KB</span>
+              </div>
+              <div class="bg-os-panel p-4 rounded-xl border border-os-border">
+                <span class="text-xs text-os-muted block mb-1">平台手續費收入 (1.5%)</span>
+                <span id="adminFeesCollected" class="font-mono text-xl font-bold text-amber-400">6,570 KB</span>
+                <button onclick="claimAdminFees()" class="mt-2 w-full bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-black py-1 rounded text-xs transition font-semibold">提領收益金庫</button>
+              </div>
+              <div class="bg-os-panel p-4 rounded-xl border border-os-border">
+                <span class="text-xs text-os-muted block mb-1">在庫 RWA 總數</span>
+                <span class="font-mono text-xl font-bold text-emerald-400">8 瓶 (全數通過鑑定)</span>
+              </div>
+              <div class="bg-os-panel p-4 rounded-xl border border-os-border">
+                <span class="text-xs text-os-muted block mb-1">合約安全開關</span>
+                <div class="flex space-x-2 mt-2">
+                  <button onclick="setContractPaused(false)" class="flex-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 py-1 rounded text-xs font-bold">運行中</button>
+                  <button onclick="setContractPaused(true)" class="flex-1 bg-red-600/20 text-red-400 border border-red-500/30 py-1 rounded text-xs font-bold">緊急暫停</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 實體提領申請審核清單 -->
+            <div class="bg-os-panel p-5 rounded-xl border border-os-border space-y-4">
+              <h3 class="text-sm font-bold text-white flex items-center">
+                <i class="fa-solid fa-box-archive text-os-blue mr-2"></i>藏家實體提領申請審核 (Redemption Queue)
+              </h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                  <thead class="text-os-muted border-b border-os-border">
+                    <tr>
+                      <th class="py-2.5 px-2">申請 ID</th>
+                      <th class="py-2.5 px-2">申辦藏家地址</th>
+                      <th class="py-2.5 px-2">提領老酒規格</th>
+                      <th class="py-2.5 px-2">收件地址與聯絡人</th>
+                      <th class="py-2.5 px-2">鏈上狀態 (Burn NFT)</th>
+                      <th class="py-2.5 px-2 text-right">倉儲出庫審核</th>
+                    </tr>
+                  </thead>
+                  <tbody id="redemptionTableBody" class="divide-y divide-os-border text-white">
+                    <tr>
+                      <td class="py-3 px-2">#RED-8021</td>
+                      <td class="py-3 px-2 text-os-muted">0x5B38...eddC4</td>
+                      <td class="py-3 px-2 text-amber-400">金門高粱特級老酒 (1998) #1</td>
+                      <td class="py-3 px-2">台北市信義區忠孝東路五段 (王先生)</td>
+                      <td class="py-3 px-2"><span class="text-amber-400 font-semibold">等待合約 Burn 驗證</span></td>
+                      <td class="py-3 px-2 text-right">
+                        <button onclick="approveRedemption(this)" class="px-3 py-1 rounded bg-emerald-600 text-white font-sans text-xs">批准出庫寄送</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 新酒上架審核區 -->
+            <div class="bg-os-panel p-5 rounded-xl border border-os-border space-y-4">
+              <h3 class="text-sm font-bold text-white flex items-center">
+                <i class="fa-solid fa-circle-plus text-emerald-400 mr-2"></i>實體老酒入庫與 NFT 鑄造上架 (Mint Engine)
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <input id="adminWineName" type="text" placeholder="老酒名稱與年份" value="金門高粱建廠紀念酒 (2001)" class="bg-os-bg border border-os-border rounded px-3 py-2 text-white">
+                <input id="adminWineUid" type="text" placeholder="NFC 晶片 UID" value="NFC_CHIP_010" class="bg-os-bg border border-os-border rounded px-3 py-2 text-amber-400 font-mono">
+                <input id="adminWinePrice" type="number" placeholder="初始掛單價 (KB)" value="35000" class="bg-os-bg border border-os-border rounded px-3 py-2 text-emerald-400 font-mono">
+              </div>
+              <button onclick="adminMintNewWine()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs transition">
+                確認實體入庫並呼叫合約 Mint 發行
+              </button>
+            </div>
+          </div>
+
+        </main>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 5. 底部系統日誌列 -->
+  <footer class="h-8 bg-os-panel border-t border-os-border px-4 flex items-center justify-between text-[11px] text-os-muted shrink-0 z-30">
+    <div class="flex items-center space-x-3 overflow-hidden">
+      <div class="flex items-center space-x-1.5 text-emerald-400 font-medium shrink-0">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="footerSystemStatus">多端廣播頻道 (BroadcastChannel) 同步運行中</span>
+      </div>
+      <span class="text-os-border">|</span>
+      <div class="font-mono truncate">
+        <span id="logText" class="text-amber-400">[系統就緒] 歡迎來到金門高粱老酒 RWA 產權交易平台！</span>
+      </div>
+    </div>
+    <div class="hidden lg:flex items-center space-x-4 font-mono text-white shrink-0">
+      <span class="text-os-muted">國立金門大學資工系專題</span>
+    </div>
+  </footer>
+
+  <!-- ================= 彈窗 1：KB 幣銀行入金中心 ================= -->
+  <div id="bankModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-os-panel border border-amber-500/40 rounded-xl max-w-lg w-full p-6 shadow-2xl relative animate-fade-in">
+      <button onclick="closeBankModal()" class="absolute top-4 right-4 text-os-muted hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+          <i class="fa-solid fa-building-columns text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">KB 幣 (Kinmen Gold Coin) 交易金庫</h3>
+          <p class="text-xs text-os-muted">入金至平台即可一鍵購買老酒產權</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="bg-os-bg p-3.5 rounded-lg border border-os-border">
+          <span class="text-xs text-os-muted block mb-1">您的外部錢包餘額</span>
+          <span id="modalWalletKb" class="font-mono text-lg font-bold text-white">0 KB</span>
+          <button onclick="claimFaucetKb()" class="mt-2 w-full bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 py-1 rounded text-xs font-semibold transition">
+            <i class="fa-solid fa-faucet mr-1"></i>領取 100,000 KB 測試幣
+          </button>
+        </div>
+        <div class="bg-os-bg p-3.5 rounded-lg border border-amber-500/30">
+          <span class="text-xs text-amber-300/80 block mb-1">平台可用 (買酒扣款用)</span>
+          <span id="modalPlatformKb" class="font-mono text-lg font-bold text-amber-400">0 KB</span>
+          <span class="mt-2 block text-[11px] text-emerald-400 font-mono">● 智慧合約瞬間交割</span>
+        </div>
+      </div>
+
+      <div class="space-y-4 bg-os-bg p-4 rounded-lg border border-os-border mb-4">
+        <div>
+          <div class="flex justify-between text-xs mb-1.5">
+            <span class="font-semibold text-white">設定入金或出金金額</span>
+            <button onclick="document.getElementById('bankAmountInput').value = walletKbBalance" class="text-os-blue hover:underline">全部填入</button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="adjustBankAmount(-10000)" class="px-3 py-2 bg-os-panel rounded border border-os-border text-white font-mono">-1萬</button>
+            <input type="number" id="bankAmountInput" value="50000" class="flex-1 bg-os-panel border border-os-border rounded px-3 py-2 text-center font-mono font-bold text-amber-400 focus:outline-none">
+            <button onclick="adjustBankAmount(10000)" class="px-3 py-2 bg-os-panel rounded border border-os-border text-white font-mono">+1萬</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="depositKb()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 rounded-lg text-xs md:text-sm transition flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-download"></i><span>存入平台 (Deposit)</span>
+          </button>
+          <button onclick="withdrawKb()" class="bg-os-active hover:bg-red-600 text-white font-semibold py-2.5 rounded-lg text-xs md:text-sm border border-gray-600 transition flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-upload"></i><span>提回錢包 (Withdraw)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="text-[11px] text-os-muted flex items-center justify-between">
+        <span>銀行合約：<code class="text-white">0xF84f...4ebc</code></span>
+        <label class="flex items-center space-x-1.5 cursor-pointer text-gray-300">
+          <input type="checkbox" id="requireMetaMaskSign" class="rounded bg-os-bg border-os-border text-os-blue focus:ring-0">
+          <span>喚醒 MetaMask 簽名</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 彈窗 2：老酒買賣、競標與「實價登錄履歷」視窗 ================= -->
+  <div id="nfcModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-os-panel border border-os-border rounded-xl max-w-lg w-full p-6 shadow-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-os-muted hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      
+      <div class="text-center mb-4">
+        <span id="modalOwnershipBadge" class="badge-verified text-xs px-2.5 py-1 rounded-full font-medium">✓ NFC 易碎晶片與區塊鏈雙向驗證通過</span>
+        <h3 id="modalWineName" class="text-lg font-bold text-white mt-2.5">金門高粱特級老酒 (1998 珍藏)</h3>
+        <p id="modalStorage" class="text-xs text-os-muted mt-1">實體老酒存放於：金門免稅恆溫總倉 (封條完好)</p>
+      </div>
+      
+      <!-- 基礎規格區 -->
+      <div class="space-y-2 bg-os-bg p-3.5 rounded-lg border border-os-border text-xs font-mono mb-4">
+        <div class="flex justify-between"><span class="text-os-muted">NFC 晶片 UID:</span><span id="modalChipUid" class="text-amber-400 font-semibold">NFC_CHIP_001</span></div>
+        <div class="flex justify-between"><span class="text-os-muted">鏈上 Token ID:</span><span id="modalTokenId" class="text-white">#1</span></div>
+        <div class="flex justify-between"><span class="text-os-muted">當前直購價:</span><span id="modalPrice" class="text-amber-400 font-bold text-sm">38,000 KB</span></div>
+        <div class="flex justify-between"><span class="text-os-muted">最高競標出價:</span><span id="modalHighestBid" class="text-emerald-400 font-bold">尚無競標</span></div>
+        <div class="flex justify-between"><span class="text-os-muted">當前持有者:</span><span id="modalOwner" class="text-white">0x5B38...eddC4</span></div>
+      </div>
+
+      <!-- 📈 專題亮點：實價登錄歷史履歷 (Price History & Registry) -->
+      <div class="mb-5 bg-os-bg p-3.5 rounded-lg border border-os-border">
+        <h4 class="text-xs font-bold text-white mb-2 flex items-center">
+          <i class="fa-solid fa-chart-line text-os-blue mr-1.5"></i>金門老酒實價登錄與溯源履歷 (Price Registry)
+        </h4>
+        <div id="priceRegistryHistory" class="space-y-1.5 text-[11px] font-mono text-os-muted">
+          <!-- 動態載入歷史 -->
+        </div>
+      </div>
+
+      <!-- 互動操作區 (買入/競標 vs 賣出) -->
+      <div id="buyActionPanel" class="space-y-3">
+        <div class="bg-os-bg p-2.5 rounded-lg border border-os-border flex justify-between items-center text-xs">
+          <span class="text-os-muted">您的平台可用餘額：</span>
+          <span id="buyModalKbBalance" class="font-mono font-bold text-amber-400">0 KB</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="buyWineWithKb()" class="bg-os-blue hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-xs transition shadow flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-cart-shopping"></i><span id="btnBuyText">直購 38,000 KB</span>
+          </button>
+          <button onclick="placeBid()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs transition shadow flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-gavel"></i><span>出高價競標 (Bid)</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="sellActionPanel" class="hidden space-y-3">
+        <div class="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg text-xs text-amber-300 flex items-center space-x-2">
+          <i class="fa-solid fa-crown text-amber-400"></i>
+          <span>您持有此老酒！可接受買家競標、調整售價或申請實體提領。</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] text-os-muted mb-1">設定轉售價格 (KB)：</label>
+            <input type="number" id="resellPriceInput" class="w-full bg-os-bg border border-amber-500/50 rounded px-2.5 py-1.5 text-xs font-mono font-bold text-amber-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] text-os-muted mb-1">&nbsp;</label>
+            <button onclick="updateListingPrice()" class="w-full bg-os-active hover:bg-os-hover text-white rounded py-1.5 text-xs font-semibold border border-gray-600">更新售價</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="acceptHighestBid()" id="btnAcceptBid" class="bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 rounded text-xs transition shadow">
+            接受最高競標成交
+          </button>
+          <button onclick="requestPhysicalRedemption()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded text-xs transition shadow">
+            申請實體提領 (Redeem)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 彈窗 3：相機 QR 掃描器 (復原) ================= -->
+  <div id="scannerModal" class="hidden fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col justify-center items-center p-4">
+    <div class="bg-os-panel border border-os-border p-5 rounded-xl w-full max-w-md relative animate-fade-in">
+      <h3 class="text-base font-bold text-white text-center mb-3 flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-camera text-os-blue"></i>
+        <span>相機掃描老酒防偽晶片 QR 標籤</span>
+      </h3>
+      <div id="reader" class="w-full rounded-lg overflow-hidden border border-os-border bg-black"></div>
+      <button onclick="toggleScanner()" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-semibold text-sm transition">
+        關閉相機掃描器
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= 彈窗 4：我的錢包與收款碼 ================= -->
+  <div id="walletModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-os-panel border border-os-border rounded-xl max-w-sm w-full p-6 shadow-2xl relative animate-fade-in text-center">
+      <button onclick="closeWalletModal()" class="absolute top-4 right-4 text-os-muted hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 class="text-base font-bold text-white mb-1 flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-qrcode text-os-blue"></i><span>我的數位酒庫收款碼</span>
+      </h3>
+      <p class="text-xs text-os-muted mb-4">掃描此條碼可轉移產權</p>
+      
+      <div class="bg-white p-3 rounded-xl inline-block mb-4 shadow-inner">
+        <div id="qrcode" class="flex justify-center"></div>
+      </div>
+
+      <div class="bg-os-bg p-3 rounded-lg border border-os-border text-left space-y-2 mb-4 text-xs">
+        <div class="flex justify-between"><span class="text-os-muted">平台可用 KB:</span><span id="walletModalKb" class="font-mono text-amber-400 font-bold">0 KB</span></div>
+        <div><span class="text-os-muted block mb-1">完整錢包地址:</span><p id="displayQrAddress" class="font-mono text-[11px] text-white bg-os-panel p-2 rounded border border-os-border break-all text-center">請先連接錢包</p></div>
+      </div>
+
+      <button onclick="closeWalletModal()" class="w-full bg-os-active hover:bg-os-hover text-white font-medium py-2 rounded-lg text-sm transition">關閉</button>
+    </div>
+  </div>
+
+  <!-- ================= JavaScript 核心邏輯 ================= -->
+  <script>
+    // 1. 跨分頁即時廣播頻道 (BroadcastChannel API - 同台電腦雙視窗 0 延遲同步)
+    const syncChannel = new BroadcastChannel('kinmen_rwa_dex_sync_channel');
+
+    const NETWORKS = {
+      sepolia: { chainId: "0xaa36a7", name: "Sepolia", explorer: "https://sepolia.etherscan.io" },
+      mainnet: { chainId: "0x1", name: "Mainnet", explorer: "https://etherscan.io" },
+      localhost: { chainId: "0x539", name: "Localhost", explorer: "" }
+    };
+
+    let currentNetworkKey = "sepolia";
+    let userAddress = null;
+    let walletKbBalance = 50000;
+    let platformKbBalance = 0;
+    let adminTotalVolume = 438000;
+    let adminFeesCollected = 6570;
+
+    let currentTabMode = "MARKET"; // 'MARKET', 'MINE', 'ADMIN'
+    let currentSelectedWine = null;
+    let html5QrcodeScanner = null;
+    let sortDirection = 1;
+
+    // 2. 老酒資料庫 (每瓶酒內建 priceHistory 實價登錄履歷與 highestBid 競標價)
+    const collectionsData = [
+      {
+        id: 1,
+        name: "金門高粱特級老酒 (1998 珍藏白金龍)",
+        category: "特級老酒",
+        uid: "NFC_CHIP_001",
+        vintage: "1998年",
+        storage: "金門免稅恆溫總倉 #A01",
+        avatarBg: "bg-gradient-to-br from-amber-600 to-yellow-800",
+        icon: "fa-wine-bottle",
+        floor: 38000,
+        change: 15.4,
+        offer: 36500,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#1",
+        rawTokenId: 1,
+        owner: "0x8A91B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e79901",
+        txHash: "0xdeeb8ae8a3eacc02250a338dba8a03cdee37c6a4dac94fe88e9d84024c341584",
+        priceHistory: [
+          { time: "2025-11-10 14:00", event: "金門免稅倉鑑定入庫", price: "32,000 KB", tx: "0x1111...2222" },
+          { time: "2026-03-15 09:30", event: "初級次級市場成交", price: "35,000 KB", tx: "0x3333...4444" },
+          { time: "2026-10-18 18:45", event: "目前掛單直購價", price: "38,000 KB", tx: "0xdeeb...1584" }
+        ]
+      },
+      {
+        id: 2,
+        name: "黑金剛陳年高粱酒 (1985 絕版老罈)",
+        category: "絕版黑金剛",
+        uid: "NFC_CHIP_002",
+        vintage: "1985年",
+        storage: "金門免稅恆溫總倉 #A02",
+        avatarBg: "bg-gradient-to-br from-zinc-700 to-zinc-900 border border-amber-500/40",
+        icon: "fa-crown",
+        floor: 68000,
+        change: 24.8,
+        offer: 65000,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#2",
+        rawTokenId: 2,
+        owner: "0x7B22C3d4E5f6A7b8C9d0E1f2A3b4C5d6E7f88822",
+        txHash: "0x8f9c2b11d4a7e63209c8a7b45f12e34d9081a2b3c4d5e6f7a8b9c0d1e2f3a4b5",
+        priceHistory: [
+          { time: "2025-12-01 10:00", event: "絕版老罈藏家信託入庫", price: "55,000 KB", tx: "0x5555...6666" },
+          { time: "2026-10-19 12:00", event: "目前掛單直購價", price: "68,000 KB", tx: "0x8f9c...a4b5" }
+        ]
+      },
+      {
+        id: 3,
+        name: "金門酒廠 58度陳年特級高粱 (2005)",
+        category: "陳年高粱",
+        uid: "NFC_CHIP_003",
+        vintage: "2005年",
+        storage: "金城合作老酒行入庫據點",
+        avatarBg: "bg-gradient-to-br from-amber-700 to-red-900",
+        icon: "fa-wine-glass-empty",
+        floor: 16800,
+        change: 6.2,
+        offer: 15500,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#3",
+        rawTokenId: 3,
+        owner: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2",
+        txHash: "0x3a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+        priceHistory: [
+          { time: "2026-01-10 11:00", event: "金城老酒行鑑定入庫", price: "15,000 KB", tx: "0x7777...8888" },
+          { time: "2026-10-15 16:20", event: "目前掛單直購價", price: "16,800 KB", tx: "0x3a1b...0a1b" }
+        ]
+      },
+      {
+        id: 4,
+        name: "金門建廠五十週年世紀珍藏紀念酒",
+        category: "紀念酒款",
+        uid: "NFC_CHIP_004",
+        vintage: "2002年",
+        storage: "山外藏家專業信託倉",
+        avatarBg: "bg-gradient-to-br from-red-700 to-rose-950",
+        icon: "fa-award",
+        floor: 29500,
+        change: -1.5,
+        offer: 28000,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#4",
+        rawTokenId: 4,
+        owner: "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db",
+        txHash: "0x7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d",
+        priceHistory: [{ time: "2026-02-20", event: "山外信託倉入庫", price: "30,000 KB", tx: "0x1234...5678" }]
+      },
+      {
+        id: 5,
+        name: "八二三砲戰勝利紀念陳高 (1993 瓷瓶)",
+        category: "紀念酒款",
+        uid: "NFC_CHIP_005",
+        vintage: "1993年",
+        storage: "金門免稅恆溫總倉 #B05",
+        avatarBg: "bg-gradient-to-br from-blue-800 to-indigo-950",
+        icon: "fa-shield-halved",
+        floor: 22000,
+        change: 9.8,
+        offer: 20500,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#5",
+        rawTokenId: 5,
+        owner: "0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB",
+        txHash: "0x1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e",
+        priceHistory: [{ time: "2026-03-05", event: "免稅總倉入庫", price: "20,000 KB", tx: "0xabcd...efgh" }]
+      },
+      {
+        id: 6,
+        name: "九龍經典珍藏金門高粱老酒 (2008)",
+        category: "特級老酒",
+        uid: "NFC_CHIP_006",
+        vintage: "2008年",
+        storage: "金城合作老酒行入庫據點",
+        avatarBg: "bg-gradient-to-br from-yellow-600 to-amber-900",
+        icon: "fa-dragon",
+        floor: 14200,
+        change: 3.1,
+        offer: 13500,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#6",
+        rawTokenId: 6,
+        owner: "0x617F2E2fD72FD9D5503197092aC168c91465E7f2",
+        txHash: "0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b",
+        priceHistory: [{ time: "2026-04-10", event: "金城酒行入庫", price: "13,800 KB", tx: "0x9999...0000" }]
+      },
+      {
+        id: 7,
+        name: "大麴酒 66度 絕版老白金龍 (1996)",
+        category: "特級老酒",
+        uid: "NFC_CHIP_007",
+        vintage: "1996年",
+        storage: "金門免稅恆溫總倉 #A09",
+        avatarBg: "bg-gradient-to-br from-emerald-700 to-teal-950",
+        icon: "fa-fire-flame-curved",
+        floor: 45000,
+        change: 18.2,
+        offer: 43000,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#7",
+        rawTokenId: 7,
+        owner: "0x17F6AD8Ef982297579C203069C1DbfFE4348c372",
+        txHash: "0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e",
+        priceHistory: [{ time: "2026-05-12", event: "總倉特級入庫", price: "38,000 KB", tx: "0x4444...5555" }]
+      },
+      {
+        id: 8,
+        name: "金門高粱 15年陳年老酒 (紫壇禮盒)",
+        category: "陳年高粱",
+        uid: "NFC_CHIP_008",
+        vintage: "2010年",
+        storage: "山外藏家專業信託倉",
+        avatarBg: "bg-gradient-to-br from-purple-800 to-fuchsia-950",
+        icon: "fa-jar",
+        floor: 19800,
+        change: 0.0,
+        offer: 18900,
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: "#8",
+        rawTokenId: 8,
+        owner: "0x99887766554433221100aabbccddeeff00112233",
+        txHash: "0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+        priceHistory: [{ time: "2026-06-01", event: "山外信託入庫", price: "19,800 KB", tx: "0x2b3c...2b3c" }]
+      }
+    ];
+
+    let currentData = [...collectionsData];
+
+    // ================= 3. 監聽跨分頁即時同步 (BroadcastChannel) =================
+    syncChannel.onmessage = (event) => {
+      const msg = event.data;
+      if (msg.type === 'STATE_SYNC') {
+        collectionsData.length = 0;
+        collectionsData.push(...msg.collections);
+        platformKbBalance = msg.platformKb;
+        adminTotalVolume = msg.totalVolume;
+        adminFeesCollected = msg.feesCollected;
+        
+        updateAllKbBalancesUI();
+        if (currentTabMode === 'MINE') {
+          currentData = collectionsData.filter(w => userAddress && w.owner.toLowerCase() === userAddress.toLowerCase());
+        } else if (currentTabMode === 'MARKET') {
+          currentData = [...collectionsData];
+        }
+        renderTable(currentData);
+        log(`[跨端同步] 接收到來自其他視窗的最新動態：${msg.actionText}`, "text-emerald-400");
+      }
+    };
+
+    function broadcastState(actionText) {
+      syncChannel.postMessage({
+        type: 'STATE_SYNC',
+        collections: collectionsData,
+        platformKb: platformKbBalance,
+        totalVolume: adminTotalVolume,
+        feesCollected: adminFeesCollected,
+        actionText: actionText
+      });
+    }
+
+    // ================= 4. 錢包與 KB 幣帳本 UI 邏輯 =================
+    function formatKb(val) {
+      return Number(val).toLocaleString('en-US') + " KB";
+    }
+
+    function updateAllKbBalancesUI() {
+      document.getElementById("headerKbBalance").innerText = formatKb(platformKbBalance);
+      document.getElementById("sidebarPlatformKb").innerText = formatKb(platformKbBalance);
+      document.getElementById("sidebarWalletKb").innerText = formatKb(walletKbBalance);
+      document.getElementById("modalWalletKb").innerText = formatKb(walletKbBalance);
+      document.getElementById("modalPlatformKb").innerText = formatKb(platformKbBalance);
+      document.getElementById("buyModalKbBalance").innerText = formatKb(platformKbBalance);
+      document.getElementById("walletModalKb").innerText = formatKb(platformKbBalance);
+      document.getElementById("totalMarketCount").innerText = collectionsData.length;
+      document.getElementById("adminTotalVolume").innerText = formatKb(adminTotalVolume);
+      document.getElementById("adminFeesCollected").innerText = formatKb(adminFeesCollected);
+
+      if (userAddress) {
+        const myWines = collectionsData.filter(w => w.owner.toLowerCase() === userAddress.toLowerCase());
+        document.getElementById("myNftCount").innerText = `${myWines.length} 瓶`;
+        document.getElementById("myVaultBadge").innerText = myWines.length;
+      } else {
+        document.getElementById("myNftCount").innerText = `未連接`;
+        document.getElementById("myVaultBadge").innerText = `0`;
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        userAddress = "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4";
+        updateNavbarState(true, "99.9990");
+        generateMyQRCode(userAddress);
+        updateAllKbBalancesUI();
+        renderTable(currentData);
+        log("已連接模擬錢包 (0x5B38...eddC4)，贈送 50,000 KB 外部餘額！", "text-emerald-400");
+        return;
+      }
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        const rawBalance = await provider.getBalance(userAddress);
+        const ethBalance = parseFloat(ethers.formatEther(rawBalance)).toFixed(4);
+        updateNavbarState(true, ethBalance);
+        generateMyQRCode(userAddress);
+        updateAllKbBalancesUI();
+        renderTable(currentData);
+        log(`MetaMask 連線成功：${userAddress.substring(0, 8)}...`, "text-emerald-400");
+      } catch (err) {
+        log("錢包連線失敗: " + err.message, "text-red-400");
+      }
+    }
+
+    function disconnect() {
+      userAddress = null;
+      updateNavbarState(false);
+      updateAllKbBalancesUI();
+      renderTable(currentData);
+      log("已安全斷開錢包", "text-os-muted");
+    }
+
+    function updateNavbarState(isConnected, ethBalance = "0.0000") {
+      if (isConnected) {
+        document.getElementById("btnConnect").classList.add("hidden");
+        document.getElementById("connectedActions").classList.remove("hidden");
+        document.getElementById("navWalletAddress").innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38);
+        document.getElementById("walletModalBalance").innerText = `${ethBalance} ETH`;
+      } else {
+        document.getElementById("btnConnect").classList.remove("hidden");
+        document.getElementById("connectedActions").classList.add("hidden");
+      }
+    }
+
+    function handleNetworkChange() {
+      currentNetworkKey = document.getElementById("networkSelector").value;
+      document.getElementById("networkLabel").innerText = NETWORKS[currentNetworkKey].name;
+    }
+
+    // ================= 5. KB 幣入金與提款 =================
+    function openBankModal() {
+      if (!userAddress) { connectWallet(); return; }
+      updateAllKbBalancesUI();
+      document.getElementById("bankModal").classList.remove("hidden");
+    }
+    function closeBankModal() { document.getElementById("bankModal").classList.add("hidden"); }
+    function adjustBankAmount(delta) {
+      const input = document.getElementById("bankAmountInput");
+      input.value = Math.max(0, (parseInt(input.value) || 0) + delta);
+    }
+    function claimFaucetKb() {
+      walletKbBalance += 100000;
+      updateAllKbBalancesUI();
+      log("【水龍頭】成功領取 100,000 KB 測試幣至外部錢包！", "text-emerald-400");
+    }
+    function depositKb() {
+      const amount = parseInt(document.getElementById("bankAmountInput").value) || 0;
+      if (amount <= 0 || amount > walletKbBalance) return alert("金額有誤或外部餘額不足！");
+      walletKbBalance -= amount;
+      platformKbBalance += amount;
+      updateAllKbBalancesUI();
+      broadcastState(`入金 ${formatKb(amount)}`);
+      log(`【入金成功】已將 ${formatKb(amount)} 存入平台金庫`, "text-emerald-400");
+      closeBankModal();
+    }
+    function withdrawKb() {
+      const amount = parseInt(document.getElementById("bankAmountInput").value) || 0;
+      if (amount <= 0 || amount > platformKbBalance) return alert("金額有誤或平台可用餘額不足！");
+      platformKbBalance -= amount;
+      walletKbBalance += amount;
+      updateAllKbBalancesUI();
+      broadcastState(`出金 ${formatKb(amount)}`);
+      log(`【出金成功】已將 ${formatKb(amount)} 提回錢包`, "text-emerald-400");
+      closeBankModal();
+    }
+
+    // ================= 6. 老酒買賣、競標與實價登錄互動 =================
+    function openWineModal(item) {
+      currentSelectedWine = item;
+      document.getElementById('modalWineName').innerText = item.name;
+      document.getElementById('modalStorage').innerText = `實體老酒存放於：${item.storage} (封條完好)`;
+      document.getElementById('modalChipUid').innerText = item.uid;
+      document.getElementById('modalTokenId').innerText = item.tokenId;
+      document.getElementById('modalPrice').innerText = formatKb(item.floor);
+      document.getElementById('modalHighestBid').innerText = item.highestBid > 0 ? formatKb(item.highestBid) : "尚無競標出價";
+      document.getElementById('modalOwner').innerText = item.owner.substring(0, 8) + "..." + item.owner.substring(36);
+      document.getElementById('modalTxHash').innerText = item.txHash;
+
+      // 渲染實價登錄歷史
+      const historyContainer = document.getElementById('priceRegistryHistory');
+      historyContainer.innerHTML = '';
+      if (item.priceHistory && item.priceHistory.length > 0) {
+        item.priceHistory.forEach(h => {
+          const div = document.createElement('div');
+          div.className = "flex justify-between items-center bg-os-panel px-2.5 py-1.5 rounded border border-os-border";
+          div.innerHTML = `<span><i class="fa-solid fa-clock mr-1 text-os-muted"></i>${h.time} - ${h.event}</span><span class="text-amber-400 font-bold">${h.price}</span>`;
+          historyContainer.appendChild(div);
+        });
+      } else {
+        historyContainer.innerHTML = `<div class="text-os-muted">尚無歷史成交紀錄</div>`;
+      }
+
+      updateAllKbBalancesUI();
+
+      const isMine = userAddress && (item.owner.toLowerCase() === userAddress.toLowerCase());
+      if (isMine) {
+        document.getElementById('modalOwnershipBadge').className = "badge-mine text-xs px-2.5 py-1 rounded-full font-bold";
+        document.getElementById('modalOwnershipBadge').innerText = "★ 您目前持有此瓶老酒之數位產權";
+        document.getElementById('buyActionPanel').classList.add('hidden');
+        document.getElementById('sellActionPanel').classList.remove('hidden');
+        document.getElementById('resellPriceInput').value = Math.round(item.floor * 1.1);
+        if (item.highestBid > 0) {
+          document.getElementById('btnAcceptBid').innerText = `接受最高出價成交 (${formatKb(item.highestBid)})`;
+          document.getElementById('btnAcceptBid').disabled = false;
+        } else {
+          document.getElementById('btnAcceptBid').innerText = `尚無買家競標`;
+          document.getElementById('btnAcceptBid').disabled = true;
+        }
+      } else {
+        document.getElementById('modalOwnershipBadge').className = "badge-verified text-xs px-2.5 py-1 rounded-full font-medium";
+        document.getElementById('modalOwnershipBadge').innerText = "✓ NFC 易碎晶片與區塊鏈雙向驗證通過";
+        document.getElementById('buyActionPanel').classList.remove('hidden');
+        document.getElementById('sellActionPanel').classList.add('hidden');
+        document.getElementById('btnBuyText').innerText = `直購 ${formatKb(item.floor)}`;
+      }
+
+      document.getElementById('nfcModal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('nfcModal').classList.add('hidden'); }
+
+    // 直購買入老酒
+    function buyWineWithKb() {
+      if (!userAddress) { connectWallet(); return; }
+      const price = currentSelectedWine.floor;
+      if (platformKbBalance < price) {
+        if (confirm("平台可用 KB 幣不足！是否前往入金？")) { closeModal(); openBankModal(); }
+        return;
+      }
+
+      platformKbBalance -= price;
+      adminTotalVolume += price;
+      const fee = Math.round(price * 0.015);
+      adminFeesCollected += fee;
+
+      currentSelectedWine.owner = userAddress;
+      currentSelectedWine.txHash = "0x" + Math.random().toString(16).substring(2, 42);
+      currentSelectedWine.priceHistory.push({
+        time: new Date().toLocaleString(),
+        event: "直購成交 (KB 幣交割)",
+        price: formatKb(price),
+        tx: currentSelectedWine.txHash
+      });
+
+      updateAllKbBalancesUI();
+      renderTable(currentData);
+      broadcastState(`藏家直購 #${currentSelectedWine.rawTokenId} (${formatKb(price)})`);
+      addTradeHistory(`直購 #${currentSelectedWine.rawTokenId}`, `-${formatKb(price)} 買入`, "text-red-400");
+      log(`【購買成功】您已成功買入「${currentSelectedWine.name}」！`, "text-emerald-400");
+      openWineModal(currentSelectedWine);
+    }
+
+    // 參與出價競標 (Place Bid)
+    function placeBid() {
+      if (!userAddress) { connectWallet(); return; }
+      const bidVal = prompt(`請輸入您對此老酒的競標出價 (KB 幣)\n(須高於目前最高出價 ${formatKb(currentSelectedWine.highestBid)} 且小於等於直購價)：`, currentSelectedWine.floor);
+      if (!bidVal) return;
+      const amount = parseInt(bidVal);
+      if (isNaN(amount) || amount <= currentSelectedWine.highestBid) {
+        return alert("競標金額無效，必須高於目前最高出價！");
+      }
+      if (platformKbBalance < amount) {
+        return alert("您的平台可用 KB 幣不足以支付此競標保證金！");
+      }
+
+      currentSelectedWine.highestBid = amount;
+      currentSelectedWine.highestBidder = userAddress;
+      currentSelectedWine.priceHistory.push({
+        time: new Date().toLocaleString(),
+        event: `買家出價競標`,
+        price: formatKb(amount),
+        tx: "0xBid..."
+      });
+
+      updateAllKbBalancesUI();
+      renderTable(currentData);
+      broadcastState(`新競標出價 #${currentSelectedWine.rawTokenId} (${formatKb(amount)})`);
+      addTradeHistory(`競標 #${currentSelectedWine.rawTokenId}`, `新出價 ${formatKb(amount)}`, "text-amber-400");
+      log(`【競標成功】您已成功出價 ${formatKb(amount)} 參與競標！`, "text-emerald-400");
+      closeModal();
+    }
+
+    // 接受最高競標成交
+    function acceptHighestBid() {
+      if (currentSelectedWine.highestBid <= 0) return alert("目前尚無買家出價！");
+      const sellPrice = currentSelectedWine.highestBid;
+      platformKbBalance += sellPrice;
+      adminTotalVolume += sellPrice;
+
+      const oldOwner = currentSelectedWine.owner;
+      currentSelectedWine.owner = currentSelectedWine.highestBidder;
+      currentSelectedWine.floor = sellPrice;
+      currentSelectedWine.highestBid = 0;
+      currentSelectedWine.highestBidder = null;
+      currentSelectedWine.txHash = "0x" + Math.random().toString(16).substring(2, 42);
+      
+      currentSelectedWine.priceHistory.push({
+        time: new Date().toLocaleString(),
+        event: "接受競標成交",
+        price: formatKb(sellPrice),
+        tx: currentSelectedWine.txHash
+      });
+
+      updateAllKbBalancesUI();
+      renderTable(currentData);
+      broadcastState(`接受競標成交 #${currentSelectedWine.rawTokenId} (${formatKb(sellPrice)})`);
+      addTradeHistory(`成交 #${currentSelectedWine.rawTokenId}`, `以 ${formatKb(sellPrice)} 競標成交`, "text-emerald-400");
+      log(`【成交成功】已接受買家競標，入帳 ${formatKb(sellPrice)}！`, "text-emerald-400");
+      closeModal();
+    }
+
+    function updateListingPrice() {
+      const newPrice = parseInt(document.getElementById('resellPriceInput').value) || 0;
+      if (newPrice <= 0) return alert("請輸入有效價格");
+      currentSelectedWine.floor = newPrice;
+      renderTable(currentData);
+      broadcastState(`調整掛單價 #${currentSelectedWine.rawTokenId}`);
+      log(`已更新掛單價為 ${formatKb(newPrice)}`, "text-emerald-400");
+      closeModal();
+    }
+
+    // 申請實體提領 (Redemption)
+    function requestPhysicalRedemption() {
+      if (!confirm("申請實體提領將會銷毀 (Burn) 此 NFT 產權，並將老酒從金門免稅倉實體打包寄出。確定申請嗎？")) return;
+      
+      // 從列表移除（已銷毀）
+      const idx = collectionsData.findIndex(w => w.id === currentSelectedWine.id);
+      if (idx !== -1) collectionsData.splice(idx, 1);
+
+      updateAllKbBalancesUI();
+      renderTable(collectionsData);
+      broadcastState(`實體提領出庫 #${currentSelectedWine.rawTokenId}`);
+      log(`【提領申請已提交】合約已觸發 Burn，金門免稅倉將為您安排實體寄送！`, "text-emerald-400");
+      closeModal();
+    }
+
+    // ================= 7. 復原相機掃描器 (html5-qrcode) =================
+    function toggleScanner(mode = 'VERIFY') {
+      const modal = document.getElementById("scannerModal");
+      if (modal.classList.contains("hidden")) {
+        modal.classList.remove("hidden");
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        html5QrcodeScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (decodedText) => {
+            toggleScanner();
+            const found = collectionsData.find(item => decodedText.includes(item.uid));
+            if (found) {
+              openWineModal(found);
+              log(`【相機掃描成功】已識別防偽晶片 [${found.name}]`, "text-emerald-400");
+            } else {
+              alert("掃描結果: " + decodedText + "\n(未在金門高粱 RWA 資料庫中找到對應晶片)");
+            }
+          }
+        ).catch(err => {
+          alert("無法啟動相機: " + err);
+          toggleScanner();
+        });
+      } else {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner.clear();
+            modal.classList.add("hidden");
+          }).catch(() => modal.classList.add("hidden"));
+        } else { modal.classList.add("hidden"); }
+      }
+    }
+
+    // ================= 8. 管理者後台營運邏輯 =================
+    function adminMintNewWine() {
+      const name = document.getElementById('adminWineName').value.trim();
+      const uid = document.getElementById('adminWineUid').value.trim();
+      const price = parseInt(document.getElementById('adminWinePrice').value) || 30000;
+      const newId = collectionsData.length + 1;
+
+      const newWine = {
+        id: newId,
+        name: name,
+        category: "特級老酒",
+        uid: uid,
+        vintage: "2001年",
+        storage: "金門免稅恆溫總倉 #VIP",
+        avatarBg: "bg-gradient-to-br from-emerald-600 to-teal-900",
+        icon: "fa-wine-bottle",
+        floor: price,
+        change: 0.0,
+        offer: Math.round(price * 0.9),
+        highestBid: 0,
+        highestBidder: null,
+        tokenId: `#${newId}`,
+        rawTokenId: newId,
+        owner: userAddress || "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+        txHash: "0x" + Math.random().toString(16).substring(2, 42),
+        priceHistory: [{ time: new Date().toLocaleString(), event: "後台審核入庫 Mint", price: formatKb(price), tx: "0xMint..." }]
+      };
+
+      collectionsData.unshift(newWine);
+      updateAllKbBalancesUI();
+      renderTable(collectionsData);
+      broadcastState(`管理員上架新酒 ${name}`);
+      log(`【後台審核成功】${name} (${uid}) 已通過入庫審核並完成鏈上鑄造上架！`, "text-emerald-400");
+      switchMainTab('MARKET');
+    }
+
+    function claimAdminFees() {
+      const amount = adminFeesCollected;
+      if (amount <= 0) return alert("目前沒有可提領的手續費收益！");
+      platformKbBalance += amount;
+      adminFeesCollected = 0;
+      updateAllKbBalancesUI();
+      log(`【收益提領成功】已將 ${formatKb(amount)} 手續費收入撥入您的管理員金庫！`, "text-emerald-400");
+    }
+
+    function setContractPaused(paused) {
+      log(paused ? "【合約安全警報】已觸發智能合約緊急暫停 (Paused)！" : "【合約狀態】智能合約已恢復正常營運", paused ? "text-red-400" : "text-emerald-400");
+      alert(paused ? "已成功呼叫合約 setPaused(true)，全面暫停市場交易！" : "已成功恢復合約營運狀態！");
+    }
+
+    function approveRedemption(btn) {
+      btn.innerText = "已出庫寄送 (Completed)";
+      btn.className = "px-3 py-1 rounded bg-gray-600 text-white font-sans text-xs cursor-default";
+      log("【實體提領】已完成倉儲出庫與黑貓宅急便物流單號對接！", "text-emerald-400");
+    }
+
+    // ================= 9. 視圖切換與表格渲染 =================
+    function switchMainTab(mode) {
+      currentTabMode = mode;
+      const marketView = document.getElementById('marketViewContainer');
+      const adminView = document.getElementById('adminViewContainer');
+      
+      // 重置導覽按鈕樣式
+      ['Market', 'Mine', 'Admin'].forEach(m => {
+        const topEl = document.getElementById(`topTab${m}`);
+        const sideEl = document.getElementById(`sideTab${m}`);
+        const indEl = document.getElementById(`sideInd${m}`);
+        if (topEl) topEl.className = "px-3.5 py-1.5 rounded-full bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center space-x-1.5 border border-os-border transition";
+        if (sideEl) sideEl.className = "w-full px-3 py-2 rounded-lg bg-os-panel hover:bg-os-hover text-os-muted hover:text-white text-xs font-medium flex items-center justify-between border border-os-border transition";
+        if (indEl) indEl.classList.add('hidden');
+      });
+
+      let activeKey = mode === 'MARKET' ? 'Market' : (mode === 'MINE' ? 'Mine' : 'Admin');
+      const activeTop = document.getElementById(`topTab${activeKey}`);
+      const activeSide = document.getElementById(`sideTab${activeKey}`);
+      const activeInd = document.getElementById(`sideInd${activeKey}`);
+      if (activeTop) activeTop.className = "px-3.5 py-1.5 rounded-full bg-os-active text-white text-xs font-medium flex items-center space-x-1.5 border border-gray-600 transition";
+      if (activeSide) activeSide.className = "w-full px-3 py-2 rounded-lg bg-os-active text-white text-xs font-medium flex items-center justify-between border border-gray-600 transition";
+      if (activeInd) activeInd.classList.remove('hidden');
+
+      if (mode === 'ADMIN') {
+        marketView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+      } else {
+        marketView.classList.remove('hidden');
+        adminView.classList.add('hidden');
+        if (mode === 'MINE') {
+          if (!userAddress) { connectWallet(); }
+          currentData = collectionsData.filter(w => userAddress && w.owner.toLowerCase() === userAddress.toLowerCase());
+        } else {
+          currentData = [...collectionsData];
+        }
+        renderTable(currentData);
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('collectionTableBody');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-12 text-center text-os-muted">
+              ${currentTabMode === 'MINE' ? '您的數位酒庫目前尚無老酒，快去「全站掛單市場」用 KB 幣買一瓶吧！' : '查無符合條件的數位產權'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      data.forEach((item, index) => {
+        const isMine = userAddress && (item.owner.toLowerCase() === userAddress.toLowerCase());
+        const ownerBadge = isMine
+          ? `<span class="badge-mine text-[11px] px-2 py-0.5 rounded font-mono font-bold"><i class="fa-solid fa-user-check mr-1"></i>我的酒庫</span>`
+          : `<span class="font-mono text-xs text-os-muted">${item.owner.substring(0, 6)}...${item.owner.substring(38)}</span>`;
+
+        const actionButton = isMine
+          ? `<button onclick="event.stopPropagation(); openWineModalById(${item.id})" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow">
+               <i class="fa-solid fa-sack-dollar mr-1"></i>管理與轉售
+             </button>`
+          : `<button onclick="event.stopPropagation(); openWineModalById(${item.id})" class="px-3 py-1.5 rounded-lg bg-os-blue hover:bg-blue-600 text-white text-xs font-semibold transition shadow">
+               <i class="fa-solid fa-cart-shopping mr-1"></i>查看與競標
+             </button>`;
+
+        const tr = document.createElement('tr');
+        tr.className = `hover:bg-os-hover/90 transition cursor-pointer group ${isMine ? 'bg-amber-500/5' : ''}`;
+        tr.onclick = () => openWineModal(item);
+        tr.innerHTML = `
+          <td class="py-3.5 pl-2 pr-3 font-mono text-os-muted">${index + 1}</td>
+          <td class="py-3.5 px-2">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-lg ${item.avatarBg} flex items-center justify-center mr-3 shrink-0 shadow-md text-white">
+                <i class="fa-solid ${item.icon} text-base"></i>
+              </div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="font-semibold text-white group-hover:text-os-blue transition">${item.name}</span>
+                  <i class="fa-solid fa-circle-check text-os-blue text-xs"></i>
+                  <span class="badge-rwa text-[10px] px-1.5 py-0.5 rounded font-mono">${item.uid}</span>
+                </div>
+                <div class="text-xs text-os-muted mt-0.5 flex items-center space-x-2">
+                  <span>年份：${item.vintage}</span><span>•</span>
+                  <span class="text-emerald-400/90"><i class="fa-solid fa-warehouse mr-1"></i>${item.storage}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 text-right font-mono font-bold text-amber-400">${formatKb(item.floor)}</td>
+          <td class="py-3.5 px-4 text-right font-mono font-medium ${item.change >= 0 ? 'text-os-green' : 'text-os-red'}">${item.change >= 0 ? '+' : ''}${item.change}%</td>
+          <td class="py-3.5 px-4 text-right font-mono text-emerald-400 font-semibold">${item.highestBid > 0 ? formatKb(item.highestBid) : formatKb(item.offer)}</td>
+          <td class="py-3.5 px-4 text-right">${ownerBadge}</td>
+          <td class="py-3.5 px-4 text-right font-mono text-white font-bold">${item.tokenId}</td>
+          <td class="py-3.5 pl-4 pr-2 text-right">${actionButton}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addTradeHistory(action, detail, colorClass) {
+      const list = document.getElementById("tradeHistoryList");
+      if (list.innerText.includes("等待交易廣播")) list.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "bg-os-panel p-2 rounded border border-os-border flex justify-between items-center animate-fade-in";
+      div.innerHTML = `<span class="font-bold ${colorClass}">${action}</span><span class="text-white">${detail}</span>`;
+      list.prepend(div);
+    }
+
+    function openWineModalById(id) {
+      const target = collectionsData.find(c => c.id === id);
+      if (target) openWineModal(target);
+    }
+
+    function filterCategory(cat) {
+      const baseList = currentTabMode === 'MINE'
+        ? collectionsData.filter(w => userAddress && w.owner.toLowerCase() === userAddress.toLowerCase())
+        : collectionsData;
+      currentData = (cat === 'ALL') ? [...baseList] : baseList.filter(item => item.category === cat);
+      renderTable(currentData);
+    }
+
+    function sortTable(field) {
+      sortDirection *= -1;
+      currentData.sort((a, b) => (a[field] - b[field]) * sortDirection);
+      renderTable(currentData);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const keyword = e.target.value.toLowerCase();
+      currentData = collectionsData.filter(item => 
+        item.name.toLowerCase().includes(keyword) || item.uid.toLowerCase().includes(keyword)
+      );
+      renderTable(currentData);
+    });
+
+    function generateMyQRCode(address) {
+      const container = document.getElementById("qrcode");
+      container.innerHTML = "";
+      new QRCode(container, { text: address, width: 140, height: 140, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+      document.getElementById("displayQrAddress").innerText = address;
+    }
+    function openWalletModal() { if (!userAddress) return connectWallet(); updateAllKbBalancesUI(); document.getElementById("walletModal").classList.remove("hidden"); }
+    function closeWalletModal() { document.getElementById("walletModal").classList.add("hidden"); }
+
+    function log(msg, colorClass = "text-emerald-400") {
+      const textEl = document.getElementById("logText");
+      textEl.className = colorClass;
+      textEl.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateAllKbBalancesUI();
+      renderTable(currentData);
+    });
+
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const filterSidebar = document.getElementById('filterSidebar');
+    toggleSidebarBtn.addEventListener('click', () => { filterSidebar.classList.toggle('hidden'); });
+  </script>
+</body>
+</html>
