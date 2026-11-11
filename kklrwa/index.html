@@ -1,0 +1,2127 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>金門老酒 RWA 平台</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="國立金門大學資訊工程學系專題：基於 RWA 與 NFC 易碎防偽技術之金門高粱老酒數位產權交易平台（測試網展示）">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 版面：倉單式三欄——左導覽軌、資產與成交廣播側欄、主工作區；手機改為底部分頁＋卡片清單 */
+:root {
+  --bg: #eef0ec;
+  --panel: #fbfcfa;
+  --sunken: #e3e6e0;
+  --line: #cfd4cc;
+  --line-strong: #9da59b;
+  --ink: #1c2220;
+  --muted: #5b645f;
+  --accent: #8f5b12;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(143, 91, 18, 0.12);
+  --seal: #b0262c;
+  --seal-soft: rgba(176, 38, 44, 0.1);
+  --good: #2b7656;
+  --good-soft: rgba(43, 118, 86, 0.12);
+  --warn: #9a6200;
+  --warn-soft: rgba(154, 98, 0, 0.13);
+  --info: #2c5c88;
+  --porcelain: #fbfbf6;
+  --cat-premium: #c18a2c;
+  --cat-aged: #7d2632;
+  --cat-black: #24262a;
+  --cat-commem: #b0262c;
+  --shadow: 0 10px 30px rgba(28, 34, 32, 0.16);
+  --font-display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --header-h: 60px;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a1d; --panel: #1e2327; --sunken: #262c31; --line: #353c42; --line-strong: #59626a;
+    --ink: #e8ebe8; --muted: #9ba49f; --accent: #e3a650; --accent-ink: #1b1306; --accent-soft: rgba(227, 166, 80, 0.14);
+    --seal: #e4575d; --seal-soft: rgba(228, 87, 93, 0.14); --good: #5fc49b; --good-soft: rgba(95, 196, 155, 0.14);
+    --warn: #e8b54d; --warn-soft: rgba(232, 181, 77, 0.14); --info: #82b2e0; --porcelain: #d9ddd6;
+    --cat-premium: #d9a443; --cat-aged: #a3404e; --cat-black: #0e0f11; --cat-commem: #d04a50;
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.45); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a1d; --panel: #1e2327; --sunken: #262c31; --line: #353c42; --line-strong: #59626a;
+  --ink: #e8ebe8; --muted: #9ba49f; --accent: #e3a650; --accent-ink: #1b1306; --accent-soft: rgba(227, 166, 80, 0.14);
+  --seal: #e4575d; --seal-soft: rgba(228, 87, 93, 0.14); --good: #5fc49b; --good-soft: rgba(95, 196, 155, 0.14);
+  --warn: #e8b54d; --warn-soft: rgba(232, 181, 77, 0.14); --info: #82b2e0; --porcelain: #d9ddd6;
+  --cat-premium: #d9a443; --cat-aged: #a3404e; --cat-black: #0e0f11; --cat-commem: #d04a50;
+  --shadow: 0 12px 34px rgba(0, 0, 0, 0.45); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--panel); }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--info); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.i { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* 頁首 */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; height: var(--header-h); background: var(--panel); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 12px; padding-block: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; color: inherit; }
+.brand-name { font-family: var(--font-display); font-weight: 900; font-size: 18px; letter-spacing: 0.04em; white-space: nowrap; }
+.brand-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar .spacer { flex: 1; }
+.mode-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+.mode-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.mode-chip.live .dot { background: var(--good); }
+.reader-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; white-space: nowrap; }
+.reader-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+.reader-chip.on { border-color: var(--good); }
+.reader-chip.on .dot { background: var(--good); }
+.reader-chip .i { width: 16px; height: 16px; }
+.kb-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); cursor: pointer; font-weight: 500; white-space: nowrap; line-height: 1.4; }
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.danger { border-color: var(--seal); color: var(--seal); }
+.btn.good { border-color: var(--good); color: var(--good); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+select.btn { padding-right: 28px; }
+
+/* 主框架 */
+.shell { display: grid; grid-template-columns: 72px 290px minmax(0, 1fr); min-height: calc(100vh - var(--header-h)); }
+.rail { position: sticky; top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); align-self: start; height: calc(100vh - var(--header-h)); border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; padding-left: max(8px, env(safe-area-inset-left, 0px)); }
+.rail button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; }
+.rail button .i { width: 22px; height: 22px; }
+.rail button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.rail button:hover { color: var(--ink); }
+.side { position: sticky; top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); align-self: start; height: calc(100vh - var(--header-h)); overflow-y: auto; border-right: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.main { min-width: 0; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.main-inner { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.card-pad { padding: 14px 16px; }
+.section-title { font-family: var(--font-display); font-weight: 900; font-size: 22px; letter-spacing: 0.03em; margin: 0; text-wrap: balance; }
+.section-lead { margin: 2px 0 0; color: var(--muted); max-width: 65ch; }
+.label { font-size: 11px; letter-spacing: 0.08em; color: var(--muted); }
+.side h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; align-items: baseline; }
+.kv dt { color: var(--muted); font-size: 12px; }
+.kv dd { margin: 0; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.asset-total { font-family: var(--font-mono); font-size: 24px; font-weight: 500; color: var(--accent); line-height: 1.2; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* 模式提示 */
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: var(--radius); border: 1px dashed var(--warn); background: var(--warn-soft); }
+.banner p { margin: 0; flex: 1; min-width: 0; }
+
+/* 成交廣播 */
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.feed li { font-size: 12.5px; padding: 7px 9px; border-radius: 8px; background: var(--sunken); display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+.feed .tag { font-weight: 700; }
+.feed .tag.sale { color: var(--good); } .feed .tag.bid { color: var(--accent); } .feed .tag.alert { color: var(--seal); }
+.feed .when { grid-column: 2; color: var(--muted); font-size: 11px; }
+.feed li.fresh { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: var(--sunken); } }
+
+/* 工具列 */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.search { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); flex: 1 1 220px; min-width: 0; }
+.search input { border: 0; outline: 0; background: transparent; width: 100%; min-width: 0; }
+
+/* 市場表格 */
+.table-wrap { overflow-x: auto; }
+table.grid { width: 100%; border-collapse: collapse; }
+table.grid th { text-align: left; font-size: 11.5px; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.grid td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.grid tr:last-child td { border-bottom: 0; }
+table.grid tbody tr { cursor: pointer; }
+table.grid tbody tr:hover td { background: var(--sunken); }
+table.grid td.r, table.grid th.r { text-align: right; }
+.wine { display: flex; gap: 12px; align-items: center; min-width: 260px; }
+.wine-name { font-weight: 700; line-height: 1.35; }
+.wine-meta { font-size: 12px; color: var(--muted); }
+.price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+.price small { color: var(--muted); font-weight: 400; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--seal-soft); color: var(--seal); }
+.pill.neutral { background: var(--sunken); color: var(--muted); }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+.seal { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1.6px solid var(--seal); color: var(--seal); font-family: var(--font-display); font-weight: 900; font-size: 13px; border-radius: 4px; transform: rotate(-5deg); flex: none; line-height: 1; }
+.seal.broken { border-style: dashed; position: relative; }
+.seal.broken::after { content: ""; position: absolute; inset: 2px; background: linear-gradient(135deg, transparent 45%, currentColor 46%, currentColor 54%, transparent 55%); }
+.seal.pending { color: var(--warn); border-color: var(--warn); }
+.seal.gone { color: var(--muted); border-color: var(--muted); }
+.statusline { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 13px; }
+.owner { font-family: var(--font-mono); font-size: 12.5px; }
+.me { color: var(--accent); font-weight: 700; font-family: var(--font-body); }
+.empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+.cards { display: none; }
+
+/* 卡片（手機） */
+.bottle-card { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.bottle-card:last-child { border-bottom: 0; }
+.bottle-card .row { grid-column: 2; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* 統計 */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { padding: 14px 16px; }
+.stat .v { font-family: var(--font-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat .sub { font-size: 12px; color: var(--muted); }
+.bank-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.bank-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bank-card h3 { margin: 0; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+.bank-card .v { font-family: var(--font-mono); font-size: 26px; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1.2; overflow-wrap: anywhere; }
+.bank-card .inline-form input { flex: 1 1 140px; min-width: 0; }
+
+/* 驗證 */
+.verify-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
+.method-list { display: grid; gap: 8px; }
+.method { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); cursor: pointer; text-align: left; width: 100%; }
+.method:hover { border-color: var(--accent); }
+.method .i { width: 26px; height: 26px; color: var(--accent); }
+.method b { display: block; }
+.method span { font-size: 12.5px; color: var(--muted); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.steps li:last-child { border-bottom: 0; }
+.step-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--sunken); color: var(--muted); }
+.steps li.ok .step-dot { background: var(--good-soft); color: var(--good); }
+.steps li.bad .step-dot { background: var(--seal-soft); color: var(--seal); }
+.steps .detail { font-family: var(--font-mono); font-size: 12px; color: var(--muted); word-break: break-all; }
+.verdict { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius); }
+.verdict.ok { background: var(--good-soft); color: var(--good); }
+.verdict.bad { background: var(--seal-soft); color: var(--seal); }
+.verdict.warn { background: var(--warn-soft); color: var(--warn); }
+.verdict b { font-size: 18px; font-family: var(--font-display); }
+video.scan { width: 100%; border-radius: var(--radius); background: #000; aspect-ratio: 4 / 3; object-fit: cover; max-width: 100%; }
+
+/* 表單 */
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 12px; color: var(--muted); }
+.field input, .field select, .field textarea { padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); min-width: 0; width: 100%; }
+.field.full { grid-column: 1 / -1; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* 對話框 */
+.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10, 12, 14, 0.55); display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.dialog { background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); width: min(720px, 100%); max-height: 100%; overflow-y: auto; border: 1px solid var(--line); }
+.dialog.narrow { width: min(460px, 100%); }
+.dialog-head { display: flex; align-items: flex-start; gap: 14px; padding: 18px 20px 12px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.dialog-head h2 { margin: 0; font-family: var(--font-display); font-weight: 900; font-size: 20px; line-height: 1.35; text-wrap: balance; }
+.dialog-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+.close { margin-left: auto; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; }
+.detail-grid div { min-width: 0; }
+.detail-grid dt { font-size: 11.5px; color: var(--muted); }
+.detail-grid dd { margin: 0; font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.timeline li { position: relative; font-size: 13px; }
+.timeline li::before { content: ""; position: absolute; left: -20px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); border: 2px solid var(--line-strong); }
+.timeline li.sale::before { border-color: var(--good); } .timeline li.alert::before { border-color: var(--seal); }
+.timeline time { display: block; font-size: 11.5px; color: var(--muted); }
+.trade-box { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--sunken); }
+.inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inline-form input, .inline-form select { padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel); min-width: 0; flex: 1 1 140px; }
+.qr-box { background: #fff; padding: 10px; border-radius: 8px; width: max-content; max-width: 100%; }
+
+/* 提示 */
+.toasts { position: fixed; z-index: 50; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+.toast { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--info); border-radius: 8px; padding: 10px 12px; box-shadow: var(--shadow); font-size: 13px; }
+.toast.ok { border-left-color: var(--good); } .toast.err { border-left-color: var(--seal); } .toast.warn { border-left-color: var(--warn); }
+.toast a { word-break: break-all; }
+
+.footer { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-block: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+.footer strong { color: var(--ink); font-weight: 500; }
+.tabbar { display: none; }
+
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: 72px minmax(0, 1fr); }
+  .side { display: none; }
+  .mobile-assets { display: grid !important; }
+}
+@media (max-width: 700px) {
+  :root { --header-h: 56px; }
+  .shell { grid-template-columns: minmax(0, 1fr); padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  .rail { display: none; }
+  .brand-sub, .kb-chip, .mode-chip, #connectLabel, .reader-chip { display: none; }
+  .banner { flex-wrap: wrap; }
+  .banner p { flex-basis: calc(100% - 28px); }
+  .banner .actions { flex-basis: 100%; flex-wrap: wrap; }
+  .topbar { gap: 8px; }
+  .brand-name { font-size: 16px; }
+  #identitySelect { max-width: 132px; padding-left: 8px; }
+  .tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--panel); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .tabbar button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; border: 0; background: transparent; color: var(--muted); font-size: 11px; }
+  .tabbar button[aria-current="page"] { color: var(--accent); font-weight: 700; }
+  .table-wrap.market { display: none; }
+  .cards { display: block; }
+  .verify-grid { grid-template-columns: minmax(0, 1fr); }
+  .dialog { border-radius: 12px; }
+  .section-title { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9M3 9h18M4 9v11h16V9M9.5 20v-6h5v6"/></symbol>
+  <symbol id="i-vault" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M12 8.5V7M15.5 12H17M12 15.5V17M8.5 12H7"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol>
+  <symbol id="i-nfc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M9.5 9a4 4 0 0 1 0 6M12.5 7.5a7 7 0 0 1 0 9"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5h-2.5a1.75 1.75 0 0 0 0 3.5h3.75"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20.5v.5M20.5 14h.5"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7l12-4v4M16.5 14h1.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.5M12 17.2v.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M6 10h5M6 14h3"/><path d="M15 9.5a3.5 3.5 0 0 1 0 5M17.5 8a6 6 0 0 1 0 8"/></symbol>
+  <symbol id="i-sim" viewBox="0 0 24 24"><path d="M4 12h3l2-5 3 10 2-5h6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="#market" data-view="market" aria-label="回到市場">
+    <svg viewBox="0 0 40 64" width="20" height="32" aria-hidden="true"><rect x="15" y="2" width="10" height="7" rx="1.5" fill="var(--seal)"/><path d="M16 9h8v8c0 2 6 4 6 9v30a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6V26c0-5 6-7 6-9z" fill="var(--porcelain)" stroke="var(--line-strong)"/><rect x="10.5" y="32" width="19" height="15" fill="var(--accent)"/></svg>
+    <span style="display:flex;flex-direction:column;min-width:0">
+      <span class="brand-name">金門老酒 RWA</span>
+      <span class="brand-sub">基於 RWA 與 NFC 易碎防偽技術之數位產權交易平台</span>
+    </span>
+  </a>
+  <span id="modeChip" class="mode-chip"><span class="dot"></span><span id="modeText">載入中</span></span>
+  <span class="spacer"></span>
+  <button id="readerChip" class="reader-chip" type="button" data-action="reader-toggle" title="USB 讀卡機（荣士 IC-02）：按一下連接或中斷"><span class="dot"></span><svg class="i"><use href="#i-card"/></svg><span class="lbl" id="readerText">讀卡機未連接</span></button>
+  <button id="kbChip" class="kb-chip" type="button" title="平台帳戶餘額（入金／提款）"><svg class="i"><use href="#i-coin"/></svg><span class="lbl">KB</span><span id="kbBalance" class="num">—</span></button>
+  <select id="identitySelect" class="btn" aria-label="切換身分" hidden></select>
+  <button id="connectBtn" class="btn primary" type="button"><svg class="i"><use href="#i-wallet"/></svg><span id="connectLabel">連接錢包</span></button>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="主要導覽">
+    <button type="button" data-view="market"><svg class="i"><use href="#i-store"/></svg>市場</button>
+    <button type="button" data-view="vault"><svg class="i"><use href="#i-vault"/></svg>我的酒庫</button>
+    <button type="button" data-view="bank"><svg class="i"><use href="#i-coin"/></svg>平台帳戶</button>
+    <button type="button" data-view="registry"><svg class="i"><use href="#i-chart"/></svg>實價登錄</button>
+    <button type="button" data-view="verify"><svg class="i"><use href="#i-nfc"/></svg>NFC 驗真</button>
+    <button type="button" data-view="admin"><svg class="i"><use href="#i-shield"/></svg>營運後台</button>
+    <span style="flex:1"></span>
+    <button type="button" id="settingsBtn"><svg class="i"><use href="#i-gear"/></svg>設定</button>
+  </nav>
+
+  <aside class="side" aria-label="資產與成交廣播">
+    <section>
+      <h3>我的 KB 幣資產</h3>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:10px">
+        <div><div class="label">平台帳戶餘額（可交易）</div><div class="asset-total" id="sideBank">—</div></div>
+        <dl class="kv" style="margin:0">
+          <dt>錢包 KB（未入金）</dt><dd id="sideKb">—</dd>
+          <dt>出價託管中</dt><dd id="sideEscrow">—</dd>
+          <dt>名下老酒</dt><dd id="sideBottles">—</dd>
+        </dl>
+        <div class="actions"><button class="btn small primary" type="button" data-view="bank"><svg class="i"><use href="#i-coin"/></svg>入金／提款</button><button class="btn small" type="button" data-action="open-wallet-qr"><svg class="i"><use href="#i-qr"/></svg>收款碼</button></div>
+      </div>
+    </section>
+    <section>
+      <h3>老酒系列</h3>
+      <div class="chips" id="sideCategories"></div>
+    </section>
+    <section style="min-height:0">
+      <h3>跨端即時成交廣播</h3>
+      <ul class="feed" id="feed"><li><span class="muted">等待鏈上事件…</span></li></ul>
+    </section>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="main-inner">
+      <div id="modeBanner" class="banner" hidden></div>
+      <div class="mobile-assets card card-pad" style="display:none;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div><div class="label">平台帳戶 KB</div><div class="num" id="mKb">—</div></div>
+        <div><div class="label">名下老酒</div><div class="num" id="mBottles">—</div></div>
+        <div class="actions"><button class="btn small primary" type="button" data-view="bank">入金／提款</button></div>
+      </div>
+
+      <section id="view-market" data-viewpanel="market">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
+          <div><h1 class="section-title">老酒產權市場</h1><p class="section-lead">每瓶老酒存放於恆溫倉，以 NTAG 424 DNA 易碎標籤綁定一枚 NFT；成交即完成產權交割。</p></div>
+        </div>
+        <div class="toolbar" style="margin-bottom:12px">
+          <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="searchInput" type="search" placeholder="搜尋酒款、年份、倉位或 Token 編號" autocomplete="off"></label>
+          <select id="saleFilter" class="btn" aria-label="交易方式"><option value="all">全部狀態</option><option value="fixed">可直購</option><option value="auction">競標中</option><option value="offerable">可出價收購</option></select>
+          <select id="sortSelect" class="btn" aria-label="排序"><option value="id">依編號</option><option value="priceAsc">價格低到高</option><option value="priceDesc">價格高到低</option><option value="vintage">年份由舊到新</option></select>
+        </div>
+        <div class="chips" id="marketCategories" style="margin-bottom:12px"></div>
+        <div class="card">
+          <div class="table-wrap market">
+            <table class="grid">
+              <thead><tr><th>老酒數位產權</th><th>封條狀態</th><th class="r">交易方式與價格</th><th class="r">最高收購出價</th><th class="r">最近成交</th><th class="r">持有者</th></tr></thead>
+              <tbody id="marketBody"></tbody>
+            </table>
+          </div>
+          <div class="cards" id="marketCards"></div>
+        </div>
+      </section>
+
+      <section id="view-vault" data-viewpanel="vault" hidden>
+        <div style="margin-bottom:12px"><h1 class="section-title">我的數位酒庫</h1><p class="section-lead">名下老酒（含掛單與競標託管中）、我的出價，以及實體提領申請進度。</p></div>
+        <div class="card"><div class="table-wrap"><table class="grid"><thead><tr><th>老酒</th><th>封條狀態</th><th>目前狀態</th><th class="r">最高收購出價</th><th class="r">操作</th></tr></thead><tbody id="vaultBody"></tbody></table></div></div>
+        <h2 class="label" style="margin:18px 0 8px">我的出價（託管中）</h2>
+        <div class="card"><div class="table-wrap"><table class="grid"><thead><tr><th>類型</th><th>老酒</th><th class="r">金額</th><th>狀態</th><th class="r">操作</th></tr></thead><tbody id="myBidsBody"></tbody></table></div></div>
+      </section>
+
+      <section id="view-bank" data-viewpanel="bank" hidden>
+        <div style="margin-bottom:12px"><h1 class="section-title">平台帳戶</h1><p class="section-lead">參考 nqu_meta 專案的 NquBank 範例設計（存款、提款、內部轉帳）。KB 幣存入平台帳戶後即可直購、競標與出價收購；成交款與退款都回到帳戶，隨時可提回 MetaMask 錢包。</p></div>
+        <div class="card card-pad" style="margin-bottom:16px">
+          <h2 class="label" style="margin:0 0 8px">連線設定</h2>
+          <div id="bankConn"></div>
+        </div>
+        <div class="bank-grid">
+          <div class="card bank-card"><div class="label">平台總儲備金</div><div class="v" id="bkTotal">—</div><dl class="kv" style="margin:0"><dt>帳戶名稱</dt><dd id="bkName">—</dd><dt>合約實際持有</dt><dd id="bkReserve">—</dd></dl></div>
+          <div class="card bank-card"><div class="label">您的帳戶餘額（可交易）</div><div class="v" id="bkMine">—</div><dl class="kv" style="margin:0"><dt>錢包 KB（未入金）</dt><dd id="bkWallet">—</dd><dt>出價託管中</dt><dd id="bkEscrow">—</dd></dl></div>
+          <div class="card bank-card" style="align-items:center;text-align:center"><div class="label" style="align-self:flex-start">我的收款碼</div><div class="qr-box" id="bkQr"></div><div class="mono" id="bkAddr" style="font-size:12px;word-break:break-all">尚未連接</div><button class="btn small" type="button" data-action="copy-address"><svg class="i"><use href="#i-copy"/></svg>複製地址</button></div>
+        </div>
+        <div class="bank-grid">
+          <div class="card bank-card">
+            <h3><svg class="i"><use href="#i-coin"/></svg>存款（入金）</h3>
+            <p class="muted" style="margin:0;font-size:12.5px">把錢包裡的 KB 存入平台帳戶。鏈上模式會先請 MetaMask 授權平台帳戶動用本次金額，再送出存款。</p>
+            <div class="inline-form"><input id="depAmount" type="number" min="0" step="any" placeholder="金額（KB）" aria-label="存款金額"><button class="btn small" type="button" data-action="dep-max">全部</button></div>
+            <div class="actions"><button class="btn primary" type="button" data-action="bank-deposit">存入平台帳戶</button><button class="btn small" type="button" data-action="claim">領取 100,000 KB 測試幣</button></div>
+          </div>
+          <div class="card bank-card">
+            <h3><svg class="i"><use href="#i-wallet"/></svg>提款（回到錢包）</h3>
+            <p class="muted" style="margin:0;font-size:12.5px">把平台帳戶餘額提回 MetaMask 錢包。平台帳戶暫停時仍可提款。</p>
+            <div class="inline-form"><input id="wdAmount" type="number" min="0" step="any" placeholder="金額（KB）" aria-label="提款金額"><button class="btn small" type="button" data-action="wd-max">全部</button></div>
+            <div class="actions"><button class="btn primary" type="button" data-action="bank-withdraw">提回錢包</button></div>
+          </div>
+          <div class="card bank-card">
+            <h3><svg class="i"><use href="#i-qr"/></svg>內部轉帳</h3>
+            <p class="muted" style="margin:0;font-size:12.5px">只改變平台帳上的餘額，不經過錢包，也不收手續費。</p>
+            <div class="inline-form"><input id="tfTo" class="mono" placeholder="收款地址 0x…" aria-label="收款地址" autocomplete="off"><button class="btn small" type="button" data-action="scan-recipient" title="掃描對方的收款碼"><svg class="i"><use href="#i-camera"/></svg>掃描</button></div>
+            <div class="inline-form"><input id="tfAmount" type="number" min="0" step="any" placeholder="金額（KB）" aria-label="轉帳金額"></div>
+            <div class="actions"><button class="btn primary" type="button" data-action="bank-transfer">轉帳給他人</button></div>
+          </div>
+        </div>
+        <h2 class="label" style="margin:18px 0 8px">交易日誌（平台帳戶）</h2>
+        <div class="card"><div class="table-wrap"><table class="grid"><thead><tr><th>時間</th><th>類型</th><th class="r">金額</th><th>對象</th><th>交易紀錄</th></tr></thead><tbody id="bankLog"></tbody></table></div></div>
+      </section>
+
+      <section id="view-registry" data-viewpanel="registry" hidden>
+        <div style="margin-bottom:12px"><h1 class="section-title">實價登錄</h1><p class="section-lead">每一筆成交都由市場合約發出 Sale 事件，任何人都能查核成交價、手續費與交易雜湊。</p></div>
+        <div class="stats" id="registryStats" style="margin-bottom:12px"></div>
+        <div class="card"><div class="table-wrap"><table class="grid"><thead><tr><th>成交時間</th><th>老酒</th><th>成交方式</th><th class="r">成交價</th><th class="r">手續費</th><th>買方</th><th>賣方</th><th>交易紀錄</th></tr></thead><tbody id="registryBody"></tbody></table></div></div>
+      </section>
+
+      <section id="view-verify" data-viewpanel="verify" hidden>
+        <div style="margin-bottom:12px"><h1 class="section-title">NFC 易碎標籤驗真</h1><p class="section-lead">每次感應，標籤都會產生一次性的 SUN 訊息（加密 UID、遞增計數器與 AES-CMAC）。網址被複製或重放時計數器不會增加，驗證即失敗。</p></div>
+        <div class="verify-grid">
+          <div class="method-list">
+            <button class="method" type="button" data-action="nfc-scan"><svg class="i"><use href="#i-nfc"/></svg><div><b>感應 NFC 標籤</b><span>Android Chrome（Web NFC）。iPhone 直接以手機背面靠近標籤即可開啟驗證網址。</span></div></button>
+            <button class="method" type="button" data-action="reader-connect"><svg class="i"><use href="#i-card"/></svg><div><b>USB 讀卡機（IC-02）</b><span id="readerMethodHint">電腦版 Chrome／Edge。連接後把卡片放上感應區，就以卡號產生一次 SUN 並驗證（展示金鑰，封條狀態依下方選項）。</span></div></button>
+            <button class="method" type="button" data-action="qr-camera"><svg class="i"><use href="#i-camera"/></svg><div><b>相機掃描 QR</b><span>不支援 NFC 的裝置可掃描瓶身或證書上的 QR 碼。</span></div></button>
+            <label class="method" for="qrFile"><svg class="i"><use href="#i-upload"/></svg><div><b>上傳 QR 照片</b><span>相機無法使用時，選擇含 QR 碼的照片辨識。</span></div></label>
+            <input id="qrFile" type="file" accept="image/*" hidden>
+            <div class="card card-pad" style="display:flex;flex-direction:column;gap:8px">
+              <label class="label" for="sunInput">貼上標籤網址（SUN）</label>
+              <textarea id="sunInput" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);font-family:var(--font-mono);font-size:12px" placeholder="https://…?picc_data=…&amp;tt=CC&amp;cmac=…"></textarea>
+              <div class="actions"><button class="btn small primary" type="button" data-action="verify-text">驗證此網址</button><button class="btn small" type="button" data-action="verify-nxp">NXP 官方範例</button></div>
+            </div>
+            <div class="card card-pad" style="display:flex;flex-direction:column;gap:8px">
+              <div class="label">模擬感應（展示用金鑰）</div>
+              <div class="inline-form"><select id="simBottle" aria-label="選擇模擬標籤"></select><select id="simTamper" aria-label="封條狀態"><option value="CC">封條完好（TT=CC）</option><option value="OO">已被拆封（TT=OO）</option></select></div>
+              <div class="actions"><button class="btn small primary" type="button" data-action="simulate-tap"><svg class="i"><use href="#i-sim"/></svg>模擬感應一次</button><button class="btn small" type="button" data-action="replay-last">重放上一則網址</button></div>
+            </div>
+            <div id="cameraBox" hidden class="card card-pad" style="display:flex;flex-direction:column;gap:8px"><video id="cameraVideo" class="scan" playsinline muted></video><button class="btn small danger" type="button" data-action="stop-camera">關閉相機</button></div>
+          </div>
+          <div class="card card-pad" id="verifyResult"><p class="muted" style="margin:0">尚未驗證。可先按「模擬感應一次」看完整流程，或貼上 NXP AN12196 官方範例網址。</p></div>
+        </div>
+      </section>
+
+      <section id="view-admin" data-viewpanel="admin" hidden>
+        <div style="margin-bottom:12px"><h1 class="section-title">營運管理後台</h1><p class="section-lead">倉儲鑑定、出庫審核、凍結與合規設定。各功能依鏈上角色（AccessControl）開放。</p></div>
+        <div id="adminRoles" class="chips" style="margin-bottom:12px"></div>
+        <div class="stats" id="adminStats" style="margin-bottom:16px"></div>
+        <div class="card card-pad" style="margin-bottom:16px;display:flex;flex-direction:column;gap:10px">
+          <h2 class="label" style="margin:0">平台帳戶（KinmenBank）管理</h2>
+          <div class="stats" id="bankAdminStats"></div>
+          <div class="inline-form"><input id="blAddr" class="mono" placeholder="0x… 要列入或解除黑名單的地址" aria-label="黑名單地址" autocomplete="off"><button class="btn small danger" type="button" data-action="blacklist" data-value="1">列入黑名單</button><button class="btn small" type="button" data-action="blacklist" data-value="0">解除</button></div>
+          <p class="muted" style="margin:0;font-size:12.5px">黑名單帳號不得存款、提款、轉帳或付款，已入帳的款項保留在帳上。暫停平台帳戶只禁止存款、轉帳與市場扣款，提款、撤回出價與退款照常。</p>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px">
+          <h2 class="label" style="margin:0 0 8px">實體提領審核佇列</h2>
+          <div class="table-wrap"><table class="grid"><thead><tr><th>老酒</th><th>申請人</th><th>申請時間</th><th>收件資料雜湊</th><th class="r">審核</th></tr></thead><tbody id="redemptionBody"></tbody></table></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px">
+          <h2 class="label" style="margin:0 0 8px">異常與待處理</h2>
+          <div class="table-wrap"><table class="grid"><thead><tr><th>項目</th><th>說明</th><th class="r">處理</th></tr></thead><tbody id="issuesBody"></tbody></table></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;display:flex;flex-direction:column;gap:12px">
+          <h2 class="label" style="margin:0">實體入庫與 NFT 鑄造（須驗證服務簽章）</h2>
+          <form id="mintForm" class="form" novalidate>
+            <div class="field"><label for="mintTo">受託人錢包地址</label><input id="mintTo" class="mono" autocomplete="off"></div>
+            <div class="field"><label for="mintName">酒款名稱</label><input id="mintName" value="金門高粱建廠紀念酒（2001）"></div>
+            <div class="field"><label for="mintCategory">系列</label><select id="mintCategory"><option>特級老酒</option><option>陳年高粱</option><option>絕版黑金剛</option><option selected>紀念酒款</option></select></div>
+            <div class="field"><label for="mintVintage">年份（西元）</label><input id="mintVintage" type="number" min="1950" max="2100" value="2001"></div>
+            <div class="field"><label for="mintVolume">容量</label><input id="mintVolume" value="750ml"></div>
+            <div class="field"><label for="mintAbv">酒精濃度</label><input id="mintAbv" value="58%"></div>
+            <div class="field"><label for="mintCellar">倉位</label><input id="mintCellar" value="金門恆溫總倉 A-04-02"></div>
+            <div class="field"><label for="mintUri">中繼資料 URI（留空則自動產生）</label><input id="mintUri" placeholder="ipfs://…/1.json"></div>
+            <div class="field full"><label for="mintSun">入庫時感應標籤取得之 SUN 網址</label><div class="inline-form"><input id="mintSun" class="mono" placeholder="picc_data=…&amp;tt=CC&amp;cmac=…"><button class="btn small" type="button" data-action="mint-new-tag">模擬一枚新標籤</button><button class="btn small" type="button" data-action="reader-connect"><svg class="i"><use href="#i-card"/></svg>用讀卡機感應</button></div></div>
+            <div class="field full" id="apiKeyField" hidden><label for="mintApiKey">驗證服務 API 金鑰（倉儲端）</label><input id="mintApiKey" type="password" autocomplete="off"></div>
+          </form>
+          <div class="actions"><button class="btn primary" type="button" data-action="mint-submit">驗證標籤並鑄造</button><span class="muted" id="mintHint" style="font-size:12.5px"></span></div>
+        </div>
+        <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+          <h2 class="label" style="margin:0">合規設定（年齡驗證，個資不上鏈）</h2>
+          <div class="actions"><span id="complianceState" class="pill neutral">—</span><button class="btn small" type="button" data-action="toggle-compliance">切換合規模式</button></div>
+          <div class="inline-form"><input id="ageAddr" class="mono" placeholder="0x… 已完成年齡驗證之地址" aria-label="地址"><button class="btn small good" type="button" data-action="age-verify" data-value="1">標記已驗證</button><button class="btn small" type="button" data-action="age-verify" data-value="0">撤銷</button></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span><strong>國立金門大學資訊工程學系 專題</strong>｜組員：李旻謙、陳衍廷、徐品豐｜指導教授：吳佳駿</span>
+    <span>測試網展示，非金門酒廠官方平台；KB 幣無真實價值，不構成投資建議。飲酒過量，有害健康｜禁止酒駕｜未滿十八歲禁止飲酒</span>
+  </footer>
+</div>
+
+<nav class="tabbar" aria-label="主要導覽（手機）">
+  <button type="button" data-view="market"><svg class="i"><use href="#i-store"/></svg>市場</button>
+  <button type="button" data-view="vault"><svg class="i"><use href="#i-vault"/></svg>酒庫</button>
+  <button type="button" data-view="bank"><svg class="i"><use href="#i-coin"/></svg>帳戶</button>
+  <button type="button" data-view="registry"><svg class="i"><use href="#i-chart"/></svg>實價</button>
+  <button type="button" data-view="verify"><svg class="i"><use href="#i-nfc"/></svg>驗真</button>
+  <button type="button" data-view="admin"><svg class="i"><use href="#i-shield"/></svg>後台</button>
+</nav>
+
+<div id="overlay" class="overlay" hidden><div id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+"use strict";
+/* ════════════════════════ 設定 ════════════════════════ */
+const CONFIG = {
+  // 由 kinmen-rwa/scripts/build-web.mjs 依 deployments/*.json 自動填入；亦可於「設定」對話框覆寫
+  deployments: {"31337":{"kb":"0x5FbDB2315678afecb367f032d93F642f64180aa3","rwa":"0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512","bank":"0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0","market":"0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9","deployBlock":0}},
+  networks: {
+    11155111: { name: "Sepolia 測試網", rpc: "https://ethereum-sepolia-rpc.publicnode.com", explorer: "https://sepolia.etherscan.io", hex: "0xaa36a7" },
+    31337: { name: "本機 Hardhat 鏈", rpc: "http://127.0.0.1:8545", explorer: "", hex: "0x7a69" },
+  },
+  defaultChainId: 11155111,
+  verifierUrl: "", // 例如 https://verifier.<學校網域>，部署 kinmen-rwa/verifier/server.js 後填入
+  publicUrl: "", // 例如 https://<帳號>.github.io/kinmen-rwa/ ，供查詢 QR 與標籤網址使用
+  logChunk: 9000,
+  pollMs: 10000,
+};
+const ABI = {"KBCoin":["constructor(address admin)","error AccessControlBadConfirmation()","error AccessControlUnauthorizedAccount(address account, bytes32 neededRole)","error ECDSAInvalidSignature()","error ECDSAInvalidSignatureLength(uint256 length)","error ECDSAInvalidSignatureS(bytes32 s)","error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed)","error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed)","error ERC20InvalidApprover(address approver)","error ERC20InvalidReceiver(address receiver)","error ERC20InvalidSender(address sender)","error ERC20InvalidSpender(address spender)","error ERC2612ExpiredSignature(uint256 deadline)","error ERC2612InvalidSigner(address signer, address owner)","error FaucetAmountTooLarge(uint256 amount)","error FaucetCooldown(uint256 availableAt)","error InvalidAccountNonce(address account, uint256 currentNonce)","error InvalidShortString()","error StringTooLong(string str)","event Approval(address indexed owner, address indexed spender, uint256 value)","event EIP712DomainChanged()","event FaucetClaimed(address indexed to, uint256 amount)","event FaucetConfigUpdated(uint256 amount, uint256 cooldown)","event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)","event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)","event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)","event Transfer(address indexed from, address indexed to, uint256 value)","function DEFAULT_ADMIN_ROLE() view returns (bytes32)","function DOMAIN_SEPARATOR() view returns (bytes32)","function MAX_FAUCET_AMOUNT() view returns (uint256)","function MINTER_ROLE() view returns (bytes32)","function allowance(address owner, address spender) view returns (uint256)","function approve(address spender, uint256 value) returns (bool)","function balanceOf(address account) view returns (uint256)","function claim()","function decimals() view returns (uint8)","function eip712Domain() view returns (bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)","function faucetAmount() view returns (uint256)","function faucetCooldown() view returns (uint256)","function getRoleAdmin(bytes32 role) view returns (bytes32)","function grantRole(bytes32 role, address account)","function hasRole(bytes32 role, address account) view returns (bool)","function lastClaimAt(address) view returns (uint256)","function mint(address to, uint256 amount)","function name() view returns (string)","function nextClaimAt(address account) view returns (uint256)","function nonces(address owner) view returns (uint256)","function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)","function renounceRole(bytes32 role, address callerConfirmation)","function revokeRole(bytes32 role, address account)","function setFaucet(uint256 amount, uint256 cooldown)","function supportsInterface(bytes4 interfaceId) view returns (bool)","function symbol() view returns (string)","function totalSupply() view returns (uint256)","function transfer(address to, uint256 value) returns (bool)","function transferFrom(address from, address to, uint256 value) returns (bool)"],"KinmenLiquorRWA":["constructor(address admin)","error AccessControlBadConfirmation()","error AccessControlUnauthorizedAccount(address account, bytes32 neededRole)","error BurnNotAllowed(uint256 tokenId)","error ECDSAInvalidSignature()","error ECDSAInvalidSignatureLength(uint256 length)","error ECDSAInvalidSignatureS(bytes32 s)","error ERC721IncorrectOwner(address sender, uint256 tokenId, address owner)","error ERC721InsufficientApproval(address operator, uint256 tokenId)","error ERC721InvalidApprover(address approver)","error ERC721InvalidOperator(address operator)","error ERC721InvalidOwner(address owner)","error ERC721InvalidReceiver(address receiver)","error ERC721InvalidSender(address sender)","error ERC721NonexistentToken(uint256 tokenId)","error InvalidAttestationSigner(address signer)","error InvalidShortString()","error InvalidVintage(uint16 vintage)","error NotActive(uint256 tokenId)","error NotEligible(address account)","error NotInVault(uint256 tokenId, uint8 status)","error NotRedemptionPending(uint256 tokenId)","error NotTokenOwner(uint256 tokenId, address caller)","error SeparationOfDutiesViolated(address account)","error SignatureExpired(uint64 deadline)","error StaleSunCounter(uint32 given, uint32 last)","error StringTooLong(string str)","error TokenFrozen(uint256 tokenId)","error TokenLocked(uint256 tokenId, uint8 status)","error UidAlreadyBound(bytes32 uidHash, uint256 tokenId)","error UidMismatch(uint256 tokenId)","error ZeroUidHash()","event AgeVerificationSet(address indexed account, bool verified)","event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)","event ApprovalForAll(address indexed owner, address indexed operator, bool approved)","event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId)","event BottleMinted(uint256 indexed tokenId, address indexed to, bytes32 indexed uidHash, uint16 vintage, string product, string cellar, string uri, uint32 sunCounter, address verifier)","event CellarUpdated(uint256 indexed tokenId, string cellar)","event ComplianceRequiredSet(bool required)","event EIP712DomainChanged()","event FrozenSet(uint256 indexed tokenId, bool frozen, string reason)","event MetadataUpdate(uint256 _tokenId)","event PhysicalVerified(uint256 indexed tokenId, uint32 sunCounter, bool intact, uint64 verifiedAt, address indexed verifier)","event Redeemed(uint256 indexed tokenId, address indexed holder, address indexed custodian, bytes32 deliveryRef)","event RedemptionCancelled(uint256 indexed tokenId, address indexed by, string reason)","event RedemptionRequested(uint256 indexed tokenId, address indexed requester, bytes32 deliveryRef)","event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)","event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)","event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)","event TamperAlert(uint256 indexed tokenId, uint32 sunCounter)","event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)","event TrustedOperatorSet(address indexed operator, bool trusted)","function COMPLIANCE_ROLE() view returns (bytes32)","function CUSTODIAN_ROLE() view returns (bytes32)","function DEFAULT_ADMIN_ROLE() view returns (bytes32)","function MINTER_ROLE() view returns (bytes32)","function MINT_TYPEHASH() view returns (bytes32)","function RECEIPT_TYPEHASH() view returns (bytes32)","function VERIFIER_ROLE() view returns (bytes32)","function ageVerified(address) view returns (bool)","function approve(address to, uint256 tokenId)","function approveRedemption(uint256 tokenId)","function balanceOf(address owner) view returns (uint256)","function bottleOf(uint256 tokenId) view returns ((bytes32 uidHash, uint16 vintage, uint8 status, bool frozen, uint32 lastSunCounter, uint64 mintedAt, uint64 lastVerifiedAt, string product, string cellar))","function bottlesInRange(uint256 startId, uint256 count) view returns ((uint256 tokenId, address owner, (bytes32 uidHash, uint16 vintage, uint8 status, bool frozen, uint32 lastSunCounter, uint64 mintedAt, uint64 lastVerifiedAt, string product, string cellar) bottle, string uri, (address requester, uint64 requestedAt, bytes32 deliveryRef) redemption)[] views)","function cancelRedemption(uint256 tokenId)","function complianceRequired() view returns (bool)","function eip712Domain() view returns (bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)","function getApproved(uint256 tokenId) view returns (address)","function getRoleAdmin(bytes32 role) view returns (bytes32)","function grantRole(bytes32 role, address account)","function hasRole(bytes32 role, address account) view returns (bool)","function isApprovedForAll(address owner, address operator) view returns (bool)","function isEligible(address account) view returns (bool)","function isTradable(uint256 tokenId) view returns (bool)","function mintDigest((address to, bytes32 uidHash, uint16 vintage, string product, string cellar, string uri, uint32 sunCounter, uint64 deadline) req) view returns (bytes32)","function mintWithAttestation((address to, bytes32 uidHash, uint16 vintage, string product, string cellar, string uri, uint32 sunCounter, uint64 deadline) req, bytes signature) returns (uint256 tokenId)","function name() view returns (string)","function ownerOf(uint256 tokenId) view returns (address)","function receiptDigest((uint256 tokenId, bytes32 uidHash, uint32 sunCounter, bool intact, uint64 verifiedAt, uint64 deadline) r) view returns (bytes32)","function recordVerification((uint256 tokenId, bytes32 uidHash, uint32 sunCounter, bool intact, uint64 verifiedAt, uint64 deadline) r, bytes signature)","function redemptionOf(uint256 tokenId) view returns ((address requester, uint64 requestedAt, bytes32 deliveryRef))","function rejectRedemption(uint256 tokenId, string reason)","function renounceRole(bytes32 role, address callerConfirmation)","function requestRedemption(uint256 tokenId, bytes32 deliveryRef)","function revokeRole(bytes32 role, address account)","function safeTransferFrom(address from, address to, uint256 tokenId)","function safeTransferFrom(address from, address to, uint256 tokenId, bytes data)","function setAgeVerified(address account, bool verified)","function setApprovalForAll(address operator, bool approved)","function setComplianceRequired(bool required)","function setFrozen(uint256 tokenId, bool frozen, string reason)","function setTrustedOperator(address operator, bool trusted)","function supportsInterface(bytes4 interfaceId) view returns (bool)","function symbol() view returns (string)","function tokenOfUid(bytes32) view returns (uint256)","function tokenURI(uint256 tokenId) view returns (string)","function totalMinted() view returns (uint256)","function transferFrom(address from, address to, uint256 tokenId)","function trustedOperator(address) view returns (bool)","function updateCellar(uint256 tokenId, string cellar)"],"KinmenBank":["constructor(address token_, string name_, address admin)","error AccessControlBadConfirmation()","error AccessControlUnauthorizedAccount(address account, bytes32 neededRole)","error AccountBlacklisted(address account)","error EnforcedPause()","error ExpectedPause()","error InsufficientBalance(address account, uint256 balance, uint256 needed)","error InvalidRecipient(address to)","error ReentrancyGuardReentrantCall()","error SafeERC20FailedOperation(address token)","error ZeroAddress()","error ZeroAmount()","event BlacklistStatusChanged(address indexed user, bool status)","event Deposit(address indexed user, uint256 amount)","event Paused(address account)","event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)","event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)","event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)","event TransferInternal(address indexed from, address indexed to, uint256 amount)","event Unpaused(address account)","event Withdraw(address indexed user, uint256 amount)","function DEFAULT_ADMIN_ROLE() view returns (bytes32)","function MARKET_ROLE() view returns (bytes32)","function PAUSER_ROLE() view returns (bytes32)","function balanceOf(address account) view returns (uint256)","function bankName() view returns (string)","function collect(address from, uint256 amount)","function deposit(uint256 amount)","function getBalance() view returns (uint256 reserve, uint256 total)","function getRoleAdmin(bytes32 role) view returns (bytes32)","function grantRole(bytes32 role, address account)","function hasRole(bytes32 role, address account) view returns (bool)","function isBlacklisted(address) view returns (bool)","function pause()","function paused() view returns (bool)","function pay(address to, uint256 amount)","function renounceRole(bytes32 role, address callerConfirmation)","function revokeRole(bytes32 role, address account)","function setBlacklist(address account, bool status)","function supportsInterface(bytes4 interfaceId) view returns (bool)","function token() view returns (address)","function totalDeposit() view returns (uint256)","function transfer(address to, uint256 amount)","function unpause()","function withdraw(uint256 amount)"],"KinmenMarketplace":["constructor(address bank_, address nft, address admin)","error AccessControlBadConfirmation()","error AccessControlUnauthorizedAccount(address account, bytes32 neededRole)","error AuctionEnded(uint256 auctionId)","error AuctionHasBids(uint256 auctionId)","error AuctionNotActive(uint256 auctionId)","error AuctionNotEnded(uint256 auctionId, uint64 endAt)","error BidTooLow(uint256 minBid)","error EnforcedPause()","error ExpectedPause()","error FeeTooHigh(uint16 bps)","error InvalidDuration(uint64 duration)","error InvalidPrice()","error ListingNotActive(uint256 listingId)","error NotEligible(address account)","error NotOfferBuyer()","error NotSeller()","error NotTokenOwner(uint256 tokenId)","error NotTradable(uint256 tokenId)","error NothingToWithdraw()","error OfferExpired(uint256 offerId)","error OfferNotActive(uint256 offerId)","error PriceAboveMax(uint256 price, uint256 maxPrice)","error ReentrancyGuardReentrantCall()","error SelfPurchase()","error TokenInAuction(uint256 tokenId)","error ZeroAddress()","event AuctionCancelled(uint256 indexed auctionId)","event AuctionCreated(uint256 indexed auctionId, uint256 indexed tokenId, address indexed seller, uint256 reservePrice, uint64 endAt)","event AuctionExtended(uint256 indexed auctionId, uint64 newEndAt)","event AuctionSettled(uint256 indexed auctionId, address indexed winner, uint256 amount)","event AuctionVoided(uint256 indexed auctionId, address indexed bidder, uint256 refunded)","event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount, uint64 endAt)","event BidRefunded(uint256 indexed auctionId, address indexed bidder, uint256 amount)","event FeeUpdated(uint16 oldBps, uint16 newBps)","event FeesWithdrawn(address indexed to, uint256 amount)","event Listed(uint256 indexed listingId, uint256 indexed tokenId, address indexed seller, uint256 price)","event ListingClosed(uint256 indexed listingId, uint256 indexed tokenId, address indexed seller)","event ListingPriceUpdated(uint256 indexed listingId, uint256 oldPrice, uint256 newPrice)","event OfferCancelled(uint256 indexed offerId)","event OfferMade(uint256 indexed offerId, uint256 indexed tokenId, address indexed buyer, uint256 amount, uint64 expiresAt)","event Paused(address account)","event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)","event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)","event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)","event Sale(uint8 indexed kind, uint256 indexed tokenId, address indexed buyer, address seller, uint256 price, uint256 fee, uint256 refId, uint64 timestamp)","event Unpaused(address account)","function DEFAULT_ADMIN_ROLE() view returns (bytes32)","function EXTENSION_WINDOW() view returns (uint64)","function MAX_DURATION() view returns (uint64)","function MAX_FEE_BPS() view returns (uint16)","function MIN_BID_INCREMENT_BPS() view returns (uint16)","function MIN_DURATION() view returns (uint64)","function PAUSER_ROLE() view returns (bytes32)","function acceptOffer(uint256 offerId)","function accruedFees() view returns (uint256)","function activeAuctionOf(uint256) view returns (uint256)","function activeListingOf(uint256) view returns (uint256)","function auctions(uint256) view returns (address seller, uint16 feeBps, bool settled, uint64 endAt, uint256 tokenId, uint256 reservePrice, address highestBidder, uint256 highestBid)","function auctionsInRange(uint256 startId, uint256 count) view returns ((address seller, uint16 feeBps, bool settled, uint64 endAt, uint256 tokenId, uint256 reservePrice, address highestBidder, uint256 highestBid)[] out)","function bank() view returns (address)","function bid(uint256 auctionId, uint256 amount)","function buy(uint256 listingId, uint256 maxPrice)","function cancelAuction(uint256 auctionId)","function cancelListing(uint256 listingId)","function cancelOffer(uint256 offerId)","function createAuction(uint256 tokenId, uint256 reservePrice, uint64 duration) returns (uint256 auctionId)","function feeBps() view returns (uint16)","function getRoleAdmin(bytes32 role) view returns (bytes32)","function grantRole(bytes32 role, address account)","function hasRole(bytes32 role, address account) view returns (bool)","function lastSalePrice(uint256) view returns (uint256)","function list(uint256 tokenId, uint256 price) returns (uint256 listingId)","function listings(uint256) view returns (address seller, uint16 feeBps, bool active, uint64 createdAt, uint256 tokenId, uint256 price)","function listingsInRange(uint256 startId, uint256 count) view returns ((address seller, uint16 feeBps, bool active, uint64 createdAt, uint256 tokenId, uint256 price)[] out)","function makeOffer(uint256 tokenId, uint256 amount, uint64 duration) returns (uint256 offerId)","function minNextBid(uint256 auctionId) view returns (uint256)","function nextAuctionId() view returns (uint256)","function nextListingId() view returns (uint256)","function nextOfferId() view returns (uint256)","function offers(uint256) view returns (address buyer, bool active, uint64 expiresAt, uint256 tokenId, uint256 amount)","function offersInRange(uint256 startId, uint256 count) view returns ((address buyer, bool active, uint64 expiresAt, uint256 tokenId, uint256 amount)[] out)","function pause()","function paused() view returns (bool)","function renounceRole(bytes32 role, address callerConfirmation)","function revokeRole(bytes32 role, address account)","function rwa() view returns (address)","function setFeeBps(uint16 newBps)","function settleAuction(uint256 auctionId)","function supportsInterface(bytes4 interfaceId) view returns (bool)","function totalSales() view returns (uint256)","function totalVolume() view returns (uint256)","function unpause()","function updatePrice(uint256 listingId, uint256 newPrice)","function withdrawFees(address to)"]};
+const DEMO_KEYS = { meta: "4B4D2D52574144454D4F2D4D4554413A", fileMaster: "4B4D2D52574144454D4F2D46494C453A", salt: "kinmen-rwa-demo-salt" };
+const HARDHAT_MNEMONIC = "test test test test test test test test test test test junk"; // Hardhat 公開測試助記詞，只用於本機鏈
+const NXP_SAMPLE = "https://ntag.nxp.com/424?e=EF963FF7828658A599F3041510671E88&c=94EED9EE65337086";
+const CATEGORIES = ["特級老酒", "陳年高粱", "絕版黑金剛", "紀念酒款"];
+const STATUS = { 0: "None", 1: "InVault", 2: "RedemptionPending", 3: "Redeemed" };
+const KIND_LABEL = ["直購", "競標", "出價收購"];
+const ROLE_IDS = () => ({
+  admin: ethers.ZeroHash,
+  minter: ethers.id("MINTER_ROLE"),
+  verifier: ethers.id("VERIFIER_ROLE"),
+  custodian: ethers.id("CUSTODIAN_ROLE"),
+  compliance: ethers.id("COMPLIANCE_ROLE"),
+  pauser: ethers.id("PAUSER_ROLE"),
+});
+
+/* ════════════════════════ 小工具 ════════════════════════ */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const nf = new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 2 });
+const kb = (n) => (n === null || n === undefined || Number.isNaN(n) ? "—" : `${nf.format(n)} KB`);
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—");
+const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+const nowSec = () => Math.floor(Date.now() / 1000) + (app.chain?.timeOffset ?? 0);
+const roc = (y) => (y > 1911 ? `民國 ${y - 1911} 年` : "");
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* 無痕或封鎖儲存時略過 */ } },
+  del(k) { try { localStorage.removeItem(k); } catch { /* 略過 */ } },
+};
+function fmtTime(sec) {
+  if (!sec) return "—";
+  const d = new Date(Number(sec) * 1000);
+  return d.toLocaleString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+}
+function ago(sec) {
+  const s = nowSec() - Number(sec);
+  if (s < 60) return "剛剛";
+  if (s < 3600) return `${Math.floor(s / 60)} 分鐘前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 小時前`;
+  return `${Math.floor(s / 86400)} 天前`;
+}
+function countdown(endAt) {
+  const s = Number(endAt) - nowSec();
+  if (s <= 0) return "已結束";
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return d > 0 ? `${d} 天 ${h} 時 ${m} 分` : `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+const pageBase = () => CONFIG.publicUrl || (/^https?:/.test(location.href) ? location.href.split(/[?#]/)[0] : "https://example.github.io/kinmen-rwa/");
+const icon = (id) => `<svg class="i"><use href="#i-${id}"/></svg>`;
+const hexToBytes = (h) => Uint8Array.from(h.replace(/^0x/, "").match(/../g).map((x) => parseInt(x, 16)));
+const bytesToHex = (b) => [...b].map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+const concatBytes = (...a) => { const out = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let o = 0; for (const x of a) { out.set(x, o); o += x.length; } return out; };
+const xorBytes = (a, b) => a.map((x, i) => x ^ b[i]);
+const utf8 = (s) => new TextEncoder().encode(s);
+
+function toast(msg, kind = "info", ms = 5200) {
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.innerHTML = msg;
+  $("#toasts").append(el);
+  setTimeout(() => el.remove(), ms);
+  return el;
+}
+
+/* ════════════════════════ SUN 驗證（WebCrypto） ════════════════════════
+ * 與 kinmen-rwa/verifier/sun.js 相同演算法（NXP AN12196、NIST SP 800-38B）。
+ * WebCrypto 沒有 ECB 模式：以 IV=0 的 CBC 加密單一區塊取第一段即為 E(K,B)；
+ * 單一區塊解密則附加一個「解開後恰為完整填充」的區塊，讓瀏覽器的填充檢查通過。 */
+const Sun = (() => {
+  const subtle = globalThis.crypto?.subtle;
+  const keyCache = new Map();
+  async function aesKey(raw) {
+    const k = bytesToHex(raw);
+    if (!keyCache.has(k)) keyCache.set(k, await subtle.importKey("raw", raw, { name: "AES-CBC" }, false, ["encrypt", "decrypt"]));
+    return keyCache.get(k);
+  }
+  async function enc(raw, block) {
+    const out = new Uint8Array(await subtle.encrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, await aesKey(raw), block));
+    return out.slice(0, 16);
+  }
+  async function dec(raw, block) {
+    const extra = await enc(raw, xorBytes(block, new Uint8Array(16).fill(16)));
+    return new Uint8Array(await subtle.decrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, await aesKey(raw), concatBytes(block, extra)));
+  }
+  const shl = (b) => { const o = new Uint8Array(16); let c = 0; for (let i = 15; i >= 0; i--) { o[i] = ((b[i] << 1) & 255) | c; c = b[i] & 128 ? 1 : 0; } return o; };
+  async function cmac(key, msg) {
+    const L = await enc(key, new Uint8Array(16));
+    const K1 = shl(L); if (L[0] & 128) K1[15] ^= 0x87;
+    const K2 = shl(K1); if (K1[0] & 128) K2[15] ^= 0x87;
+    const n = Math.max(1, Math.ceil(msg.length / 16));
+    const full = msg.length > 0 && msg.length % 16 === 0;
+    let last;
+    if (full) last = xorBytes(msg.slice((n - 1) * 16), K1);
+    else { const p = new Uint8Array(16); const rest = msg.slice((n - 1) * 16); p.set(rest); p[rest.length] = 0x80; last = xorBytes(p, K2); }
+    let x = new Uint8Array(16);
+    for (let i = 0; i < n - 1; i++) x = await enc(key, xorBytes(x, msg.slice(i * 16, i * 16 + 16)));
+    return enc(key, xorBytes(x, last));
+  }
+  const trunc = (m) => Uint8Array.from({ length: 8 }, (_, i) => m[2 * i + 1]);
+  async function diversify(master, uid) { return cmac(master, concatBytes(Uint8Array.of(1), uid, utf8("KinmenRWA"))); }
+  async function uidHash(uid, salt) {
+    const k = await subtle.importKey("raw", utf8(salt), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    return "0x" + bytesToHex(new Uint8Array(await subtle.sign("HMAC", k, uid))).toLowerCase();
+  }
+  function parse(input) {
+    const text = String(input).trim();
+    const raw = (text.includes("?") ? text.slice(text.indexOf("?") + 1) : text).split("#")[0];
+    const p = new URLSearchParams(raw);
+    const picc = p.get("picc_data") ?? p.get("e");
+    const macName = p.has("cmac") ? "cmac" : "c";
+    const mac = p.get(macName);
+    if (!picc || !mac) return null;
+    const start = (name) => { const m = new RegExp(`(^|&)${name}=`).exec(raw); return m ? m.index + m[0].length : -1; };
+    const macAt = start(macName);
+    const starts = ["enc", "tt"].map(start).filter((i) => i >= 0 && i < macAt);
+    return { raw, picc, mac, tt: p.get("tt"), enc: p.get("enc"), macInput: starts.length ? raw.slice(Math.min(...starts), macAt) : "" };
+  }
+  /** 驗證並回傳逐步結果；keys = {meta, fileKeyFor(uid)} */
+  async function verify(input, keys, lastCounter = -1) {
+    const p = parse(input);
+    if (!p) throw new Error("網址缺少 picc_data／e 或 cmac／c 參數");
+    if (!/^[0-9a-fA-F]{32}$/.test(p.picc) || !/^[0-9a-fA-F]{16}$/.test(p.mac)) throw new Error("PICCData 或 CMAC 長度不正確");
+    const plain = await dec(keys.meta, hexToBytes(p.picc));
+    const tag = plain[0];
+    if (!(tag & 0x80) || !(tag & 0x40) || (tag & 0x0f) !== 7) {
+      return { parsed: p, decryptOk: false, plain: bytesToHex(plain) };
+    }
+    const uid = plain.slice(1, 8), ctrBytes = plain.slice(8, 11);
+    const counter = ctrBytes[0] | (ctrBytes[1] << 8) | (ctrBytes[2] << 16);
+    const fileKey = await keys.fileKeyFor(uid);
+    const sv2 = concatBytes(hexToBytes("3CC300010080"), uid, ctrBytes);
+    const macKey = await cmac(fileKey, sv2);
+    const full = await cmac(macKey, utf8(p.macInput));
+    const expected = bytesToHex(trunc(full));
+    const macOk = expected === p.mac.toUpperCase();
+    const tt = p.tt ? p.tt.toUpperCase() : null;
+    return {
+      parsed: p, decryptOk: true, plain: bytesToHex(plain), tag, uid, uidHex: bytesToHex(uid), counter, ctrHex: bytesToHex(ctrBytes),
+      sv2: bytesToHex(sv2), macFull: bytesToHex(full), expected, macOk, fresh: counter > lastCounter, lastCounter,
+      tt, intact: tt ? tt === "CC" : true,
+    };
+  }
+  async function simulate(uid, counter, keys, tt) {
+    const ctr = Uint8Array.of(counter & 255, (counter >> 8) & 255, (counter >> 16) & 255);
+    const plain = concatBytes(Uint8Array.of(0xc7), uid, ctr, crypto.getRandomValues(new Uint8Array(5)));
+    const picc = await enc(keys.meta, plain);
+    const macKey = await cmac(await keys.fileKeyFor(uid), concatBytes(hexToBytes("3CC300010080"), uid, ctr));
+    const input = tt ? `${tt}&cmac=` : "";
+    const mac = bytesToHex(trunc(await cmac(macKey, utf8(input))));
+    return `picc_data=${bytesToHex(picc)}${tt ? `&tt=${tt}` : ""}&cmac=${mac}`;
+  }
+  return { verify, simulate, uidHash, diversify, cmac, available: !!subtle };
+})();
+const demoKeys = {
+  meta: hexToBytes(DEMO_KEYS.meta),
+  fileKeyFor: (uid) => Sun.diversify(hexToBytes(DEMO_KEYS.fileMaster), uid),
+};
+const zeroKeys = { meta: new Uint8Array(16), fileKeyFor: async () => new Uint8Array(16) }; // NXP AN12196 範例金鑰
+const demoUid = (n) => Uint8Array.of(0x04, 0x4b, 0x4d, 0x52, 0x57, 0x41, n & 255);
+
+/* ════════════════════════ 錯誤訊息（合約自訂錯誤 → 中文） ════════════════════════ */
+const ERR = {
+  FaucetCooldown: (a) => `水龍頭冷卻中，可於 ${fmtTime(a[0])} 後再領取`,
+  SignatureExpired: () => "驗證服務簽章已過期，請重新感應標籤取得新簽章",
+  ZeroUidHash: () => "晶片雜湊不可為空",
+  InvalidVintage: () => "年份需介於 1950 至 2100 年",
+  UidAlreadyBound: (a) => `此晶片已綁定 Token #${a[1]}，不可重複代幣化`,
+  InvalidAttestationSigner: () => "簽章者不是授權的驗證服務，已拒絕",
+  SeparationOfDutiesViolated: () => "鑄造者與驗證服務不可為同一帳號（職責分離）",
+  NotActive: () => "此瓶已出庫或不存在",
+  UidMismatch: () => "驗證收據與此瓶的晶片不符",
+  StaleSunCounter: (a) => `SUN 計數器未遞增（${a[0]} ≤ ${a[1]}），疑似重放舊網址`,
+  NotTokenOwner: () => "您不是此瓶的持有者",
+  NotInVault: () => "此瓶目前不在庫，無法執行",
+  TokenFrozen: () => "此瓶已因標籤異常而凍結",
+  TokenLocked: () => "此瓶正在提領流程中，暫時鎖定",
+  NotRedemptionPending: () => "此瓶沒有待審核的提領申請",
+  BurnNotAllowed: () => "只能透過核准出庫流程銷毀",
+  NotEligible: () => "此地址尚未完成年齡驗證（合規模式）",
+  ZeroAddress: () => "地址不可為零地址",
+  InvalidPrice: () => "金額需大於 0",
+  InvalidDuration: () => "期限需介於 10 分鐘至 30 天",
+  NotTradable: () => "此瓶目前不可交易（提領中或已凍結）",
+  NotSeller: () => "只有賣方可以執行此操作",
+  SelfPurchase: () => "不能購買或出價自己的老酒",
+  ListingNotActive: () => "掛單已成交或已撤下",
+  PriceAboveMax: (a) => `賣方已調整價格為 ${kb(Number(ethers.formatEther(a[0])))}，請重新確認`,
+  AuctionNotActive: () => "競標不存在或已結算",
+  AuctionEnded: () => "競標已結束，無法再出價",
+  AuctionNotEnded: () => "競標尚未結束",
+  AuctionHasBids: () => "已有人出價，無法取消競標",
+  BidTooLow: (a) => `出價至少需 ${kb(Number(ethers.formatEther(a[0])))}`,
+  OfferNotActive: () => "此出價已失效",
+  OfferExpired: () => "此出價已逾期",
+  NotOfferBuyer: () => "只有出價者可以撤回",
+  TokenInAuction: () => "此瓶正在競標中，不能接受其他出價",
+  FeeTooHigh: () => "手續費不可超過 10%",
+  NothingToWithdraw: () => "沒有可提領的款項",
+  EnforcedPause: () => "合約已緊急暫停，暫不接受此操作（提款、撤單與撤回出價不受影響）",
+  ExpectedPause: () => "合約目前並未暫停",
+  InsufficientBalance: (a) => `平台帳戶餘額不足：可用 ${kb(Number(ethers.formatEther(a[1])))}，需要 ${kb(Number(ethers.formatEther(a[2])))}。請先到「平台帳戶」入金`,
+  AccountBlacklisted: () => "此帳號已被平台帳戶列入黑名單，暫停存提款、轉帳與交易",
+  ZeroAmount: () => "金額需大於 0",
+  InvalidRecipient: () => "收款地址不正確（不可為零地址或自己）",
+  ReentrancyGuardReentrantCall: () => "偵測到重入呼叫，已阻擋",
+  AccessControlUnauthorizedAccount: () => "目前帳號沒有執行此操作的權限",
+  ERC20InsufficientBalance: () => "錢包 KB 幣不足，請先在「平台帳戶」領取測試幣",
+  ERC20InsufficientAllowance: () => "尚未授權平台帳戶動用錢包中的 KB",
+  ERC721InsufficientApproval: () => "尚未授權市場合約轉移此瓶",
+  ERC721NonexistentToken: () => "此 Token 不存在或已出庫",
+};
+class DemoError extends Error { constructor(name, args = []) { super(name); this.errName = name; this.errArgs = args; } }
+function explain(e) {
+  if (e instanceof DemoError) return (ERR[e.errName] ?? (() => e.errName))(e.errArgs);
+  if (e?.code === "ACTION_REJECTED" || e?.info?.error?.code === 4001) return "您已在錢包中取消";
+  const data = e?.data ?? e?.info?.error?.data ?? e?.error?.data;
+  if (data && app.chain?.interfaces) {
+    for (const iface of app.chain.interfaces) {
+      try { const parsed = iface.parseError(data); if (parsed) return (ERR[parsed.name] ?? (() => parsed.name))(parsed.args); } catch { /* 試下一個 */ }
+    }
+  }
+  if (e?.revert?.name) return (ERR[e.revert.name] ?? (() => e.revert.name))(e.revert.args ?? []);
+  return e?.shortMessage ?? e?.message ?? String(e);
+}
+
+/* ════════════════════════ 展示模式：以 JavaScript 重現合約規則 ════════════════════════ */
+class DemoChain {
+  constructor() {
+    this.kind = "demo";
+    this.label = "展示模式";
+    this.timeOffset = 0;
+    this.listeners = new Set();
+    this.people = {
+      A: { name: "收藏家 A（您）", address: DemoChain.addr("collector-a") },
+      B: { name: "收藏家 B", address: DemoChain.addr("collector-b") },
+      C: { name: "收藏家 C", address: DemoChain.addr("collector-c") },
+      D: { name: "收藏家 D", address: DemoChain.addr("collector-d") },
+      ADMIN: { name: "倉儲管理者", address: DemoChain.addr("custodian") },
+    };
+    this.verifierAddr = DemoChain.addr("sun-verifier");
+    this.account = this.people.A.address;
+    this.channel = "BroadcastChannel" in window ? new BroadcastChannel("kinmen-rwa-demo-v2") : null;
+    this.channel?.addEventListener("message", (ev) => { if (ev.data?.type === "state") { this.s = ev.data.state; this.emit(); } });
+  }
+  static addr(seed) { return ethers.getAddress(ethers.dataSlice(ethers.id(`kinmen-demo:${seed}`), 12)); }
+  get identities() { return Object.entries(this.people).map(([k, p]) => ({ key: k, ...p })); }
+  nameOf(a) { const p = Object.values(this.people).find((x) => same(x.address, a)); return p ? p.name : null; }
+  async init() {
+    const saved = store.get("kinmen-rwa-demo-state-v2", null);
+    this.s = saved?.bank ? saved : await this.seed();
+    this.timeOffset = this.s.timeOffset ?? 0;
+  }
+  async reset() { store.del("kinmen-rwa-demo-state-v2"); this.s = await this.seed(); this.timeOffset = 0; this.persist(); }
+  persist() {
+    this.s.timeOffset = this.timeOffset;
+    store.set("kinmen-rwa-demo-state-v2", this.s);
+    this.channel?.postMessage({ type: "state", state: this.s });
+    this.emit();
+  }
+  on(fn) { this.listeners.add(fn); }
+  emit() { for (const fn of this.listeners) fn(); }
+  now() { return Math.floor(Date.now() / 1000) + this.timeOffset; }
+  async seed() {
+    const P = this.people, t = Math.floor(Date.now() / 1000);
+    const s = { bottles: {}, listings: [], auctions: [], offers: [], sales: [], events: [], balances: {}, bank: {}, bankTotal: 0, bankPaused: false, blacklist: {},
+      bankName: "金門老酒平台帳戶", roles: {}, accruedFees: 0, totalVolume: 0, totalSales: 0, feeBps: 150, paused: false, complianceRequired: false, ageVerified: {}, nextBlock: 1000, tagCounters: {} };
+    s.roles[P.ADMIN.address] = ["admin", "minter", "custodian", "compliance", "pauser", "bankAdmin", "bankPauser"];
+    s.balances[P.ADMIN.address] = 0;
+    const B = [
+      [1, "金門高粱特級老酒（1998 珍藏）", "特級老酒", 1998, "600ml", "58%", "金門恆溫總倉 A-01-01", P.B],
+      [2, "黑金剛陳年高粱酒（1985 老罈）", "絕版黑金剛", 1985, "1000ml", "58%", "金門恆溫總倉 A-01-02", P.B],
+      [3, "金門 58 度陳年特級高粱（2005）", "陳年高粱", 2005, "600ml", "58%", "金城合作倉 B-02-05", P.C],
+      [4, "建廠五十週年紀念酒（2002）", "紀念酒款", 2002, "750ml", "58%", "山外信託倉 C-03-01", P.C],
+      [5, "金門陳年高粱（1993 窖藏）", "陳年高粱", 1993, "600ml", "53%", "金門恆溫總倉 A-02-08", P.A],
+      [6, "八二三紀念酒（2008）", "紀念酒款", 2008, "500ml", "56%", "金門恆溫總倉 A-03-11", P.A],
+      [7, "金門高粱特級老酒（1990 珍藏）", "特級老酒", 1990, "600ml", "58%", "金門恆溫總倉 A-01-07", P.C],
+    ];
+    let clock = t - 9 * 86400;
+    const tick = (sec) => (clock += sec);
+    // 每位收藏家領取 100,000 KB 測試幣，其中 90,000 存入平台帳戶
+    for (const p of [P.A, P.B, P.C, P.D]) { s.balances[p.address] = 10000; s.bank[p.address] = 90000; s.bankTotal += 90000; this._ev(s, "Deposit", { user: p.address, amount: 90000 }, tick(60)); }
+    for (const [n, name, cat, vintage, vol, abv, cellar, owner] of B) {
+      const uidHash = await Sun.uidHash(demoUid(n), DEMO_KEYS.salt);
+      const meta = { name: `${name} #${n}`, description: "展示資料：國立金門大學資訊工程學系專題之測試網資產，不代表真實商品、價格或投資建議。", attributes: [{ trait_type: "系列", value: cat }, { trait_type: "年份", value: vintage }, { trait_type: "容量", value: vol }, { trait_type: "酒精濃度", value: abv }] };
+      s.bottles[n] = { tokenId: n, owner: owner.address, uidHash, vintage, status: 1, frozen: false, lastSunCounter: 1, mintedAt: tick(3600), lastVerifiedAt: clock, product: `${name}｜${vol}｜${abv}`, cellar, meta, redemption: null };
+      s.tagCounters[n] = 1;
+      this._ev(s, "BottleMinted", { tokenId: n, to: owner.address, product: name }, clock);
+    }
+    const list = (n, seller, price) => { const id = s.listings.length + 1; s.listings.push({ id, seller: seller.address, tokenId: n, price, active: true, feeBps: 150, createdAt: tick(1800) }); s.bottles[n].owner = "MARKET"; this._ev(s, "Listed", { listingId: id, tokenId: n, seller: seller.address, price }, clock); return id; };
+    list(1, P.B, 38000);
+    s.auctions.push({ id: 1, seller: P.B.address, tokenId: 2, reservePrice: 60000, highestBid: 0, highestBidder: null, endAt: t + 3 * 86400, settled: false, feeBps: 150 });
+    s.bottles[2].owner = "MARKET";
+    this._ev(s, "AuctionCreated", { auctionId: 1, tokenId: 2, seller: P.B.address, reservePrice: 60000 }, tick(1800));
+    const l3 = list(3, P.C, 16800);
+    list(4, P.C, 29500);
+    list(6, P.A, 22000);
+    s.bottles[1].lastSunCounter = 2; s.tagCounters[1] = 2; s.bottles[1].lastVerifiedAt = tick(3600);
+    this._ev(s, "PhysicalVerified", { tokenId: 1, sunCounter: 2, intact: true }, clock);
+    // 成交：A 直購 #3（從平台帳戶扣款）；D 對 #5 出價、A 接受
+    this._move(s, P.A.address, "MARKET", 16800, tick(5 * 3600));
+    this._sale(s, "FixedPrice", 3, P.C.address, P.A.address, 16800, l3, clock);
+    s.listings[l3 - 1].active = false; s.bottles[3].owner = P.A.address;
+    s.offers.push({ id: 1, buyer: P.D.address, tokenId: 5, amount: 20000, expiresAt: clock + 7 * 86400, active: false });
+    this._move(s, P.D.address, "MARKET", 20000, tick(1800));
+    this._ev(s, "OfferMade", { offerId: 1, tokenId: 5, buyer: P.D.address, amount: 20000 }, clock);
+    this._sale(s, "Offer", 5, P.A.address, P.D.address, 20000, 1, tick(7200));
+    s.bottles[5].owner = P.D.address;
+    // 競標：D 出價 60,000，C 加價 63,000（D 的出價退回其平台帳戶）
+    this._move(s, P.D.address, "MARKET", 60000, tick(3600));
+    this._ev(s, "BidPlaced", { auctionId: 1, bidder: P.D.address, amount: 60000 }, clock);
+    this._move(s, P.C.address, "MARKET", 63000, tick(1800));
+    this._ev(s, "BidPlaced", { auctionId: 1, bidder: P.C.address, amount: 63000 }, clock);
+    this._move(s, "MARKET", P.D.address, 60000, clock);
+    this._ev(s, "BidRefunded", { auctionId: 1, bidder: P.D.address, amount: 60000 }, clock);
+    s.auctions[0].highestBid = 63000; s.auctions[0].highestBidder = P.C.address;
+    // A 對 #1 出價收購 36,500（託管中）
+    s.offers.push({ id: 2, buyer: P.A.address, tokenId: 1, amount: 36500, expiresAt: t + 6 * 86400, active: true });
+    this._move(s, P.A.address, "MARKET", 36500, tick(900));
+    this._ev(s, "OfferMade", { offerId: 2, tokenId: 1, buyer: P.A.address, amount: 36500 }, clock);
+    // D 申請提領 #5；#7 回報拆封而凍結
+    s.bottles[5].status = 2; s.bottles[5].redemption = { requester: P.D.address, requestedAt: tick(3600), deliveryRef: ethers.id("demo-delivery-005") };
+    this._ev(s, "RedemptionRequested", { tokenId: 5, requester: P.D.address }, clock);
+    s.bottles[7].frozen = true; s.bottles[7].lastSunCounter = 2; s.tagCounters[7] = 2;
+    this._ev(s, "TamperAlert", { tokenId: 7, sunCounter: 2 }, tick(1800));
+    return s;
+  }
+  _ev(s, name, args, time) { s.nextBlock += 1; s.events.push({ name, args, time: time ?? this.now(), blockNumber: s.nextBlock, txHash: ethers.id(`demo-tx-${s.nextBlock}`) }); }
+  /** 平台帳戶內部移轉；"MARKET" 代表市場合約在平台帳戶的託管帳戶 */
+  _move(s, from, to, amount, time) {
+    s.bank[from] = (s.bank[from] ?? 0) - amount;
+    s.bank[to] = (s.bank[to] ?? 0) + amount;
+    this._ev(s, "TransferInternal", { from, to, amount }, time);
+  }
+  /** 成交：價款已在市場託管帳戶，手續費留在帳上累計，其餘撥給賣方的平台帳戶 */
+  _sale(s, kind, tokenId, seller, buyer, price, refId, time) {
+    const fee = Math.floor((price * s.feeBps) / 10000 * 100) / 100;
+    s.accruedFees += fee; s.totalVolume += price; s.totalSales += 1;
+    this._move(s, "MARKET", seller, price - fee, time);
+    s.sales.push({ kind, tokenId, seller, buyer, price, fee, refId, time: time ?? this.now(), txHash: ethers.id(`demo-sale-${s.sales.length + 1}`) });
+    this._ev(s, "Sale", { kind, tokenId, seller, buyer, price }, time);
+  }
+  /* ── 讀取 ── */
+  async snapshot() {
+    const s = this.s, me = this.account;
+    const bottles = Object.values(s.bottles).map((b) => ({ ...b, owner: b.owner === "MARKET" ? "MARKET" : b.owner }));
+    return {
+      bottles, listings: s.listings, auctions: s.auctions, offers: s.offers, sales: s.sales, events: s.events,
+      stats: { totalVolume: s.totalVolume, totalSales: s.totalSales, accruedFees: s.accruedFees, feeBps: s.feeBps, paused: s.paused },
+      me: me ? { address: me, kb: s.balances[me] ?? 0, kbMax: String(s.balances[me] ?? 0), bank: s.bank[me] ?? 0, bankMax: String(s.bank[me] ?? 0), blacklisted: !!s.blacklist[me], approvedForAll: true, ageVerified: !!s.ageVerified[me], roles: s.roles[me] ?? [] } : null,
+      bank: { name: s.bankName, total: s.bankTotal, reserve: s.bankTotal, paused: s.bankPaused, address: "BANK" },
+      complianceRequired: s.complianceRequired, marketAddress: "MARKET",
+    };
+  }
+  /* ── 共用檢查 ── */
+  _b(id) { const b = this.s.bottles[id]; if (!b || b.status === 0) throw new DemoError("ERC721NonexistentToken"); return b; }
+  _tradable(b) { return b.status === 1 && !b.frozen; }
+  _eligible(a) { return !this.s.complianceRequired || !!this.s.ageVerified[a]; }
+  _need(role) { if (!(this.s.roles[this.account] ?? []).includes(role)) throw new DemoError("AccessControlUnauthorizedAccount"); }
+  _W(n) { return ethers.parseEther(Number(n).toFixed(6)); }
+  _bankOf(a) { return this.s.bank[a] ?? 0; }
+  /** 對應 KinmenBank.collect：從付款人的平台帳戶移入市場託管帳戶 */
+  _collect(from, amount) {
+    if (this.s.bankPaused) throw new DemoError("EnforcedPause");
+    if (this.s.blacklist[from]) throw new DemoError("AccountBlacklisted", [from]);
+    const bal = this._bankOf(from);
+    if (bal < amount) throw new DemoError("InsufficientBalance", [from, this._W(bal), this._W(amount)]);
+    this._move(this.s, from, "MARKET", amount);
+  }
+  /** 對應 KinmenBank.pay：從市場託管帳戶撥款 */
+  _payOut(to, amount) { this._move(this.s, "MARKET", to, amount); }
+  _notPaused() { if (this.s.paused) throw new DemoError("EnforcedPause"); }
+  _holder(id) { const l = this.s.listings.find((x) => x.active && x.tokenId === id); if (l) return l.seller; const a = this.s.auctions.find((x) => !x.settled && x.tokenId === id); if (a) return a.seller; return this.s.bottles[id]?.owner; }
+  async _tx(fn, label) { await new Promise((r) => setTimeout(r, 350)); const out = fn(); this.persist(); return { hash: ethers.id(`demo-${label}-${Date.now()}`), out }; }
+  /* ── 寫入（與合約同名同規則） ── */
+  claim() { return this._tx(() => { const me = this.account; const k = `faucet:${me}`; const last = this.s[k] ?? 0; if (last && this.now() < last + 86400) throw new DemoError("FaucetCooldown", [last + 86400]); this.s[k] = this.now(); this.s.balances[me] = (this.s.balances[me] ?? 0) + 100000; this._ev(this.s, "FaucetClaimed", { to: me, amount: 100000 }); }, "claim"); }
+  /* ── 平台帳戶（對應 KinmenBank：deposit／withdraw／transfer） ── */
+  deposit(amount) { return this._tx(() => {
+    const me = this.account, v = Number(amount);
+    if (this.s.bankPaused) throw new DemoError("EnforcedPause");
+    if (!(v > 0)) throw new DemoError("ZeroAmount");
+    if (this.s.blacklist[me]) throw new DemoError("AccountBlacklisted", [me]);
+    if ((this.s.balances[me] ?? 0) < v) throw new DemoError("ERC20InsufficientBalance");
+    toast("展示模式：已自動授權平台帳戶動用本次存款金額（鏈上模式會先跳出 MetaMask 授權）", "info");
+    this.s.balances[me] -= v; this.s.bank[me] = this._bankOf(me) + v; this.s.bankTotal += v;
+    this._ev(this.s, "Deposit", { user: me, amount: v });
+  }, "deposit"); }
+  withdraw(amount) { return this._tx(() => {
+    const me = this.account, v = Number(amount);
+    if (!(v > 0)) throw new DemoError("ZeroAmount");
+    if (this.s.blacklist[me]) throw new DemoError("AccountBlacklisted", [me]);
+    const bal = this._bankOf(me);
+    if (bal < v) throw new DemoError("InsufficientBalance", [me, this._W(bal), this._W(v)]);
+    this.s.bank[me] = bal - v; this.s.bankTotal -= v; this.s.balances[me] = (this.s.balances[me] ?? 0) + v;
+    this._ev(this.s, "Withdraw", { user: me, amount: v });
+  }, "withdraw"); }
+  transfer(to, amount) { return this._tx(() => {
+    const me = this.account, v = Number(amount);
+    if (this.s.bankPaused) throw new DemoError("EnforcedPause");
+    if (!(v > 0)) throw new DemoError("ZeroAmount");
+    if (!ethers.isAddress(to) || to === ethers.ZeroAddress || same(to, me)) throw new DemoError("InvalidRecipient", [to]);
+    const dest = ethers.getAddress(to);
+    if (this.s.blacklist[me]) throw new DemoError("AccountBlacklisted", [me]);
+    if (this.s.blacklist[dest]) throw new DemoError("AccountBlacklisted", [dest]);
+    const bal = this._bankOf(me);
+    if (bal < v) throw new DemoError("InsufficientBalance", [me, this._W(bal), this._W(v)]);
+    this._move(this.s, me, dest, v);
+  }, "transfer"); }
+  /** 交易前檢查平台帳戶餘額；不足時先從錢包入金差額 */
+  async ensureBank(amount) {
+    const me = this.account, bal = this._bankOf(me);
+    if (bal >= amount) return;
+    const gap = Math.round((amount - bal) * 1e6) / 1e6;
+    if ((this.s.balances[me] ?? 0) < gap) throw new DemoError("InsufficientBalance", [me, this._W(bal), this._W(amount)]);
+    toast(`平台帳戶餘額不足，先從錢包入金差額 ${kb(gap)}`, "warn");
+    await this.deposit(gap);
+  }
+  bankPause(p) { return this._tx(() => { this._need("bankPauser"); if (p && this.s.bankPaused) throw new DemoError("EnforcedPause"); if (!p && !this.s.bankPaused) throw new DemoError("ExpectedPause"); this.s.bankPaused = p; this._ev(this.s, p ? "BankPaused" : "BankUnpaused", {}); }, "bankPause"); }
+  setBlacklist(addr, v) { return this._tx(() => { this._need("bankAdmin"); const a = ethers.getAddress(addr); this.s.blacklist[a] = v; this._ev(this.s, "BlacklistStatusChanged", { user: a, status: v }); }, "blacklist"); }
+  list(tokenId, price) { return this._tx(() => { this._notPaused(); const b = this._b(tokenId); if (price <= 0) throw new DemoError("InvalidPrice"); if (!same(b.owner, this.account)) throw new DemoError("NotTokenOwner"); if (!this._tradable(b)) throw new DemoError("NotTradable"); const id = this.s.listings.length + 1; this.s.listings.push({ id, seller: this.account, tokenId, price, active: true, feeBps: this.s.feeBps, createdAt: this.now() }); b.owner = "MARKET"; this._ev(this.s, "Listed", { listingId: id, tokenId, seller: this.account, price }); }, "list"); }
+  updatePrice(listingId, price) { return this._tx(() => { this._notPaused(); const l = this.s.listings[listingId - 1]; if (!l?.active) throw new DemoError("ListingNotActive"); if (!same(l.seller, this.account)) throw new DemoError("NotSeller"); if (price <= 0) throw new DemoError("InvalidPrice"); l.price = price; this._ev(this.s, "ListingPriceUpdated", { listingId, tokenId: l.tokenId, price }); }, "update"); }
+  cancelListing(listingId) { return this._tx(() => { const l = this.s.listings[listingId - 1]; if (!l?.active) throw new DemoError("ListingNotActive"); if (!same(l.seller, this.account)) throw new DemoError("NotSeller"); l.active = false; this.s.bottles[l.tokenId].owner = l.seller; this._ev(this.s, "ListingClosed", { listingId, tokenId: l.tokenId }); }, "cancel"); }
+  async buy(listingId, maxPrice) { const pre = this.s.listings[listingId - 1]; if (pre?.active && !same(pre.seller, this.account) && pre.price <= maxPrice) await this.ensureBank(pre.price); return this._tx(() => { this._notPaused(); const l = this.s.listings[listingId - 1]; if (!l?.active) throw new DemoError("ListingNotActive"); if (same(l.seller, this.account)) throw new DemoError("SelfPurchase"); if (l.price > maxPrice) throw new DemoError("PriceAboveMax", [ethers.parseEther(String(l.price)), ethers.parseEther(String(maxPrice))]); if (!this._eligible(this.account)) throw new DemoError("NotEligible"); const b = this._b(l.tokenId); if (!this._tradable(b)) throw new DemoError("NotTradable"); this._collect(this.account, l.price); l.active = false; b.owner = this.account; const s0 = this.s.feeBps; this.s.feeBps = l.feeBps; this._sale(this.s, "FixedPrice", l.tokenId, l.seller, this.account, l.price, listingId); this.s.feeBps = s0; }, "buy"); }
+  createAuction(tokenId, reserve, duration) { return this._tx(() => { this._notPaused(); const b = this._b(tokenId); if (reserve <= 0) throw new DemoError("InvalidPrice"); if (duration < 600 || duration > 30 * 86400) throw new DemoError("InvalidDuration"); if (!same(b.owner, this.account)) throw new DemoError("NotTokenOwner"); if (!this._tradable(b)) throw new DemoError("NotTradable"); const id = this.s.auctions.length + 1; this.s.auctions.push({ id, seller: this.account, tokenId, reservePrice: reserve, highestBid: 0, highestBidder: null, endAt: this.now() + duration, settled: false, feeBps: this.s.feeBps }); b.owner = "MARKET"; this._ev(this.s, "AuctionCreated", { auctionId: id, tokenId, seller: this.account, reservePrice: reserve }); }, "auction"); }
+  minNextBid(a) { return a.highestBid === 0 ? a.reservePrice : a.highestBid + Math.ceil(a.highestBid * 0.05); }
+  async bid(auctionId, amount) { const pre = this.s.auctions[auctionId - 1]; if (pre && !pre.settled && amount >= this.minNextBid(pre)) await this.ensureBank(amount); return this._tx(() => { this._notPaused(); const a = this.s.auctions[auctionId - 1]; if (!a || a.settled) throw new DemoError("AuctionNotActive"); if (this.now() >= a.endAt) throw new DemoError("AuctionEnded"); if (same(a.seller, this.account)) throw new DemoError("SelfPurchase"); if (!this._eligible(this.account)) throw new DemoError("NotEligible"); if (!this._tradable(this.s.bottles[a.tokenId])) throw new DemoError("NotTradable"); const min = this.minNextBid(a); if (amount < min) throw new DemoError("BidTooLow", [ethers.parseEther(String(min))]); this._collect(this.account, amount); if (a.highestBidder) { this._payOut(a.highestBidder, a.highestBid); this._ev(this.s, "BidRefunded", { auctionId, bidder: a.highestBidder, amount: a.highestBid }); } a.highestBid = amount; a.highestBidder = this.account; if (a.endAt - this.now() < 300) { a.endAt = this.now() + 300; } this._ev(this.s, "BidPlaced", { auctionId, bidder: this.account, amount }); }, "bid"); }
+  settleAuction(auctionId) { return this._tx(() => { this._notPaused(); const a = this.s.auctions[auctionId - 1]; if (!a || a.settled) throw new DemoError("AuctionNotActive"); if (this.now() < a.endAt) throw new DemoError("AuctionNotEnded"); a.settled = true; const b = this.s.bottles[a.tokenId]; if (!a.highestBidder) { b.owner = a.seller; this._ev(this.s, "AuctionSettled", { auctionId, winner: null }); return; } if (!this._tradable(b) || !this._eligible(a.highestBidder)) { this._payOut(a.highestBidder, a.highestBid); b.owner = a.seller; this._ev(this.s, "AuctionVoided", { auctionId }); return; } const s0 = this.s.feeBps; this.s.feeBps = a.feeBps; this._sale(this.s, "Auction", a.tokenId, a.seller, a.highestBidder, a.highestBid, auctionId); this.s.feeBps = s0; b.owner = a.highestBidder; this._ev(this.s, "AuctionSettled", { auctionId, winner: a.highestBidder }); }, "settle"); }
+  cancelAuction(auctionId) { return this._tx(() => { const a = this.s.auctions[auctionId - 1]; if (!a || a.settled) throw new DemoError("AuctionNotActive"); if (!same(a.seller, this.account)) throw new DemoError("NotSeller"); if (a.highestBidder) throw new DemoError("AuctionHasBids"); a.settled = true; this.s.bottles[a.tokenId].owner = a.seller; this._ev(this.s, "AuctionCancelled", { auctionId }); }, "cancelAuction"); }
+  async makeOffer(tokenId, amount, duration) { if (amount > 0) await this.ensureBank(amount); return this._tx(() => { this._notPaused(); if (amount <= 0) throw new DemoError("InvalidPrice"); if (duration < 600 || duration > 30 * 86400) throw new DemoError("InvalidDuration"); if (!this._eligible(this.account)) throw new DemoError("NotEligible"); const b = this._b(tokenId); if (!this._tradable(b)) throw new DemoError("NotTradable"); if (same(this._holder(tokenId), this.account)) throw new DemoError("SelfPurchase"); this._collect(this.account, amount); const id = this.s.offers.length + 1; this.s.offers.push({ id, buyer: this.account, tokenId, amount, expiresAt: this.now() + duration, active: true }); this._ev(this.s, "OfferMade", { offerId: id, tokenId, buyer: this.account, amount }); }, "offer"); }
+  cancelOffer(offerId) { return this._tx(() => { const o = this.s.offers[offerId - 1]; if (!o?.active) throw new DemoError("OfferNotActive"); if (!same(o.buyer, this.account)) throw new DemoError("NotOfferBuyer"); o.active = false; this._payOut(o.buyer, o.amount); this._ev(this.s, "OfferCancelled", { offerId, tokenId: o.tokenId }); }, "cancelOffer"); }
+  acceptOffer(offerId) { return this._tx(() => { this._notPaused(); const o = this.s.offers[offerId - 1]; if (!o?.active) throw new DemoError("OfferNotActive"); if (this.now() > o.expiresAt) throw new DemoError("OfferExpired"); if (same(o.buyer, this.account)) throw new DemoError("SelfPurchase"); if (this.s.auctions.some((a) => !a.settled && a.tokenId === o.tokenId)) throw new DemoError("TokenInAuction"); if (!this._eligible(o.buyer)) throw new DemoError("NotEligible"); const b = this._b(o.tokenId); if (!this._tradable(b)) throw new DemoError("NotTradable"); const l = this.s.listings.find((x) => x.active && x.tokenId === o.tokenId); if (l) { if (!same(l.seller, this.account)) throw new DemoError("NotSeller"); l.active = false; } else if (!same(b.owner, this.account)) throw new DemoError("NotTokenOwner"); o.active = false; this._sale(this.s, "Offer", o.tokenId, this.account, o.buyer, o.amount, offerId); b.owner = o.buyer; }, "accept"); }
+  requestRedemption(tokenId, deliveryRef) { return this._tx(() => { const b = this._b(tokenId); if (!same(b.owner, this.account)) throw new DemoError("NotTokenOwner"); if (b.status !== 1) throw new DemoError("NotInVault"); if (b.frozen) throw new DemoError("TokenFrozen"); if (this.s.complianceRequired && !this.s.ageVerified[this.account]) throw new DemoError("NotEligible"); b.status = 2; b.redemption = { requester: this.account, requestedAt: this.now(), deliveryRef }; this._ev(this.s, "RedemptionRequested", { tokenId, requester: this.account }); }, "redeem"); }
+  cancelRedemption(tokenId) { return this._tx(() => { const b = this._b(tokenId); if (!same(b.owner, this.account)) throw new DemoError("NotTokenOwner"); if (b.status !== 2) throw new DemoError("NotRedemptionPending"); b.status = 1; b.redemption = null; this._ev(this.s, "RedemptionCancelled", { tokenId }); }, "cancelRedeem"); }
+  approveRedemption(tokenId) { return this._tx(() => { this._need("custodian"); const b = this._b(tokenId); if (b.status !== 2) throw new DemoError("NotRedemptionPending"); b.status = 3; const holder = b.owner; b.owner = null; this._ev(this.s, "Redeemed", { tokenId, holder }); }, "approveRedeem"); }
+  rejectRedemption(tokenId, reason) { return this._tx(() => { this._need("custodian"); const b = this._b(tokenId); if (b.status !== 2) throw new DemoError("NotRedemptionPending"); b.status = 1; b.redemption = null; this._ev(this.s, "RedemptionCancelled", { tokenId, reason }); }, "rejectRedeem"); }
+  setFrozen(tokenId, frozen, reason) { return this._tx(() => { this._need("custodian"); const b = this._b(tokenId); if (b.status === 3) throw new DemoError("NotActive"); b.frozen = frozen; this._ev(this.s, "FrozenSet", { tokenId, frozen, reason }); }, "freeze"); }
+  pause(p) { return this._tx(() => { this._need("pauser"); if (p && this.s.paused) throw new DemoError("EnforcedPause"); if (!p && !this.s.paused) throw new DemoError("ExpectedPause"); this.s.paused = p; this._ev(this.s, p ? "Paused" : "Unpaused", {}); }, "pause"); }
+  withdrawFees() { return this._tx(() => { this._need("admin"); if (this.s.accruedFees <= 0) throw new DemoError("NothingToWithdraw"); this._payOut(this.account, this.s.accruedFees); this._ev(this.s, "FeesWithdrawn", { amount: this.s.accruedFees }); this.s.accruedFees = 0; }, "fees"); }
+  setComplianceRequired(v) { return this._tx(() => { this._need("admin"); this.s.complianceRequired = v; }, "compliance"); }
+  setAgeVerified(addr, v) { return this._tx(() => { this._need("compliance"); this.s.ageVerified[ethers.getAddress(addr)] = v; }, "age"); }
+  async verifyAndRecord(result) {
+    // 展示模式：模擬「驗證服務簽章 → recordVerification」
+    return this._tx(() => {
+      const id = Object.values(this.s.bottles).find((b) => b.uidHash === result.uidHash)?.tokenId;
+      const b = this._b(id);
+      if (b.status !== 1 && b.status !== 2) throw new DemoError("NotActive");
+      if (result.counter <= b.lastSunCounter) throw new DemoError("StaleSunCounter", [result.counter, b.lastSunCounter]);
+      b.lastSunCounter = result.counter; b.lastVerifiedAt = this.now();
+      this._ev(this.s, "PhysicalVerified", { tokenId: id, sunCounter: result.counter, intact: result.intact });
+      if (!result.intact && !b.frozen) { b.frozen = true; this._ev(this.s, "TamperAlert", { tokenId: id, sunCounter: result.counter }); }
+    }, "verify");
+  }
+  async mint(form, sun) {
+    return this._tx(() => {
+      this._need("minter");
+      if (!sun.macOk) throw new DemoError("InvalidAttestationSigner");
+      if (!sun.intact) throw new DemoError("TokenFrozen");
+      const exists = Object.values(this.s.bottles).find((b) => b.uidHash === sun.uidHash);
+      if (exists) throw new DemoError("UidAlreadyBound", [sun.uidHash, exists.tokenId]);
+      const id = Object.keys(this.s.bottles).length + 1;
+      this.s.bottles[id] = { tokenId: id, owner: ethers.getAddress(form.to), uidHash: sun.uidHash, vintage: form.vintage, status: 1, frozen: false, lastSunCounter: sun.counter, mintedAt: this.now(), lastVerifiedAt: this.now(), product: form.product, cellar: form.cellar, meta: form.meta, redemption: null };
+      this._ev(this.s, "BottleMinted", { tokenId: id, to: form.to, product: form.name });
+    }, "mint");
+  }
+  fastForward(sec) { this.timeOffset += sec; this.persist(); }
+  tagCounter(n) { return this.s.tagCounters[n] ?? 0; }
+  bumpTag(n) { this.s.tagCounters[n] = this.tagCounter(n) + 1; this.persist(); return this.s.tagCounters[n]; }
+  lastAcceptedCounter(uidHash) { return Object.values(this.s.bottles).find((b) => b.uidHash === uidHash)?.lastSunCounter ?? -1; }
+  tokenByUidHash(uidHash) { return Object.values(this.s.bottles).find((b) => b.uidHash === uidHash)?.tokenId ?? 0; }
+}
+
+/* ════════════════════════ 鏈上模式：ethers v6 呼叫真實合約 ════════════════════════ */
+class EvmChain {
+  constructor(chainId, dep, provider) {
+    this.kind = "evm";
+    this.chainId = Number(chainId);
+    this.net = CONFIG.networks[this.chainId] ?? { name: `Chain ${chainId}`, explorer: "" };
+    this.label = this.net.name;
+    this.dep = dep;
+    this.provider = provider;
+    this.signer = null;
+    this.account = null;
+    this.timeOffset = 0;
+    this.kbC = new ethers.Contract(dep.kb, ABI.KBCoin, provider);
+    this.rwaC = new ethers.Contract(dep.rwa, ABI.KinmenLiquorRWA, provider);
+    this.mktC = new ethers.Contract(dep.market, ABI.KinmenMarketplace, provider);
+    this.bankC = new ethers.Contract(dep.bank, ABI.KinmenBank, provider);
+    this.interfaces = [this.mktC.interface, this.bankC.interface, this.rwaC.interface, this.kbC.interface];
+    this.events = [];
+    this.lastBlock = Number(dep.deployBlock ?? 0) - 1;
+    this.blockTimes = new Map();
+    this.metaCache = new Map();
+    this.listeners = new Set();
+    this.isLocal = this.chainId === 31337;
+  }
+  static async tryConnect(chainId) {
+    const dep = currentDeployment(chainId);
+    if (!ABI?.KinmenBank || !dep?.rwa || !dep?.market || !dep?.kb || !dep?.bank) return null;
+    const net = CONFIG.networks[chainId];
+    if (!net?.rpc) return null;
+    const provider = new ethers.JsonRpcProvider(net.rpc, Number(chainId), { staticNetwork: true });
+    const code = await Promise.race([provider.getCode(dep.rwa), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000))]);
+    if (!code || code === "0x") return null;
+    return new EvmChain(chainId, dep, provider);
+  }
+  get identities() {
+    if (!this.isLocal) return null;
+    if (!this._ids) {
+      const names = ["#0 管理者（倉儲／鑑定）", "#1 驗證服務（測試）", "#2 收藏家 A", "#3 收藏家 B", "#4 收藏家 C", "#5 收藏家 D"];
+      this._ids = names.map((name, i) => ({ key: String(i), name, address: this.devWallet(i).address }));
+    }
+    return this._ids;
+  }
+  devWallet(i) {
+    this._root = this._root ?? ethers.HDNodeWallet.fromPhrase(HARDHAT_MNEMONIC, undefined, "m/44'/60'/0'/0");
+    return this._root.deriveChild(i);
+  }
+  nameOf(a) { const id = this.identities?.find((x) => same(x.address, a)); return id ? id.name.replace(/^#\d\s/, "") : null; }
+  on(fn) { this.listeners.add(fn); }
+  emit() { for (const fn of this.listeners) fn(); }
+  async init() { await this.syncLogs(); }
+  useDev(i) { this.signer = this.devWallet(i).connect(this.provider); this.account = this.signer.address; this.emit(); }
+  async connectInjected() {
+    if (!window.ethereum) throw new Error("找不到瀏覽器錢包（請安裝 MetaMask，或在手機上使用錢包 App 內建瀏覽器開啟）");
+    const bp = new ethers.BrowserProvider(window.ethereum);
+    await bp.send("eth_requestAccounts", []);
+    const { chainId } = await bp.getNetwork();
+    if (Number(chainId) !== this.chainId) {
+      try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: this.net.hex }] }); }
+      catch (e) {
+        if (e?.code !== 4902 && e?.data?.originalError?.code !== 4902) throw new Error(`請在錢包切換到 ${this.net.name}（chainId ${this.chainId}）`);
+        // 錢包尚未加入此網路：自動請求新增（NquBank 範例在此提示使用者手動新增）
+        await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: this.net.hex, chainName: this.net.name, rpcUrls: [this.net.rpc], nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 }, blockExplorerUrls: this.net.explorer ? [this.net.explorer] : undefined }] });
+      }
+    }
+    const bp2 = new ethers.BrowserProvider(window.ethereum);
+    this.signer = await bp2.getSigner();
+    this.account = await this.signer.getAddress();
+    window.ethereum.on?.("accountsChanged", (accs) => { this.account = accs?.[0] ? ethers.getAddress(accs[0]) : null; bp2.getSigner().then((s) => { this.signer = s; this.emit(); }).catch(() => this.emit()); });
+    window.ethereum.on?.("chainChanged", () => location.reload());
+    this.emit();
+  }
+  w(c) { if (!this.signer) throw new Error("請先連接錢包"); return c.connect(this.signer); }
+  async send(p) { const tx = await p; const t = toast(`交易已送出，等待區塊確認…<br><span class="mono">${esc(short(tx.hash))}</span>`, "info", 60000); try { const rc = await tx.wait(); return rc; } finally { t.remove(); } }
+  explorerTx(h) { return this.net.explorer ? `${this.net.explorer}/tx/${h}` : null; }
+  explorerAddr(a) { return this.net.explorer ? `${this.net.explorer}/address/${a}` : null; }
+  /* ── 事件同步：分段讀取，避免公開 RPC 的區塊範圍限制 ── */
+  async syncLogs() {
+    const latest = await this.provider.getBlockNumber();
+    if (latest <= this.lastBlock) return false;
+    let from = this.lastBlock + 1, chunk = CONFIG.logChunk, added = 0;
+    while (from <= latest) {
+      const to = Math.min(latest, from + chunk - 1);
+      let logs;
+      try { logs = await this.provider.getLogs({ address: [this.dep.rwa, this.dep.market, this.dep.kb, this.dep.bank], fromBlock: from, toBlock: to }); }
+      catch (e) { if (chunk > 500) { chunk = Math.floor(chunk / 2); continue; } throw e; }
+      for (const log of logs) {
+        const iface = same(log.address, this.dep.market) ? this.mktC.interface : same(log.address, this.dep.rwa) ? this.rwaC.interface : same(log.address, this.dep.bank) ? this.bankC.interface : this.kbC.interface;
+        let parsed; try { parsed = iface.parseLog(log); } catch { parsed = null; }
+        if (!parsed || ["Transfer", "Approval", "ApprovalForAll", "RoleGranted", "MetadataUpdate"].includes(parsed.name)) continue;
+        const args = this.normArgs(parsed);
+        if (parsed.name === "TransferInternal") { if (same(args.from, this.dep.market)) args.from = "MARKET"; if (same(args.to, this.dep.market)) args.to = "MARKET"; }
+        const name = same(log.address, this.dep.bank) && (parsed.name === "Paused" || parsed.name === "Unpaused") ? `Bank${parsed.name}` : parsed.name;
+        this.events.push({ name, args, blockNumber: log.blockNumber, txHash: log.transactionHash, logIndex: log.index, time: 0 });
+        added++;
+      }
+      from = to + 1;
+    }
+    this.lastBlock = latest;
+    const missing = [...new Set(this.events.filter((e) => !e.time).map((e) => e.blockNumber))].slice(-300);
+    await Promise.all(missing.map(async (bn) => { if (!this.blockTimes.has(bn)) { const b = await this.provider.getBlock(bn); this.blockTimes.set(bn, b?.timestamp ?? 0); } }));
+    for (const e of this.events) if (!e.time) e.time = this.blockTimes.get(e.blockNumber) ?? 0;
+    return added > 0;
+  }
+  normArgs(parsed) {
+    const out = {};
+    parsed.fragment.inputs.forEach((inp, i) => {
+      let v = parsed.args[i];
+      if (typeof v === "bigint") v = ["price", "fee", "amount", "reservePrice", "refunded", "newPrice", "oldPrice"].includes(inp.name) ? Number(ethers.formatEther(v)) : Number(v);
+      out[inp.name] = v;
+    });
+    if (parsed.name === "Sale") out.kind = ["FixedPrice", "Auction", "Offer"][out.kind];
+    return out;
+  }
+  async meta(uri) {
+    if (!uri) return null;
+    if (this.metaCache.has(uri)) return this.metaCache.get(uri);
+    let m = null;
+    try {
+      if (uri.startsWith("data:application/json;base64,")) m = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(uri.split(",")[1]), (c) => c.charCodeAt(0))));
+      else if (uri.startsWith("ipfs://")) m = await (await fetch(`https://ipfs.io/ipfs/${uri.slice(7)}`)).json();
+      else if (uri.startsWith("https://")) m = await (await fetch(uri)).json();
+    } catch { m = null; }
+    this.metaCache.set(uri, m);
+    return m;
+  }
+  async snapshot() {
+    const E = (x) => Number(ethers.formatEther(x));
+    this._bankName = this._bankName ?? (await this.bankC.bankName());
+    const [total, nL, nA, nO, fee, accrued, vol, sales, paused, compReq, bankBal, bankPaused] = await Promise.all([
+      this.rwaC.totalMinted(), this.mktC.nextListingId(), this.mktC.nextAuctionId(), this.mktC.nextOfferId(), this.mktC.feeBps(),
+      this.mktC.accruedFees(), this.mktC.totalVolume(), this.mktC.totalSales(), this.mktC.paused(), this.rwaC.complianceRequired(),
+      this.bankC.getBalance(), this.bankC.paused(),
+    ]);
+    const bottles = [];
+    for (let s = 1; s <= Number(total); s += 100) {
+      for (const v of await this.rwaC.bottlesInRange(s, 100)) {
+        const meta = await this.meta(v.uri);
+        bottles.push({
+          tokenId: Number(v.tokenId), owner: same(v.owner, this.dep.market) ? "MARKET" : v.owner === ethers.ZeroAddress ? null : v.owner,
+          uidHash: v.bottle.uidHash, vintage: Number(v.bottle.vintage), status: Number(v.bottle.status), frozen: v.bottle.frozen,
+          lastSunCounter: Number(v.bottle.lastSunCounter), mintedAt: Number(v.bottle.mintedAt), lastVerifiedAt: Number(v.bottle.lastVerifiedAt),
+          product: v.bottle.product, cellar: v.bottle.cellar, uri: v.uri, meta,
+          redemption: v.redemption.requester === ethers.ZeroAddress ? null : { requester: v.redemption.requester, requestedAt: Number(v.redemption.requestedAt), deliveryRef: v.redemption.deliveryRef },
+        });
+      }
+    }
+    const range = async (fn, next) => (Number(next) > 1 ? fn(1, Number(next) - 1) : []);
+    const listings = (await range((a, b) => this.mktC.listingsInRange(a, b), nL)).map((l, i) => ({ id: i + 1, seller: l.seller, tokenId: Number(l.tokenId), price: E(l.price), priceWei: l.price, active: l.active, feeBps: Number(l.feeBps), createdAt: Number(l.createdAt) }));
+    const auctions = (await range((a, b) => this.mktC.auctionsInRange(a, b), nA)).map((x, i) => ({ id: i + 1, seller: x.seller, tokenId: Number(x.tokenId), reservePrice: E(x.reservePrice), highestBid: E(x.highestBid), highestBidWei: x.highestBid, highestBidder: x.highestBidder === ethers.ZeroAddress ? null : x.highestBidder, endAt: Number(x.endAt), settled: x.settled, feeBps: Number(x.feeBps) }));
+    const offers = (await range((a, b) => this.mktC.offersInRange(a, b), nO)).map((o, i) => ({ id: i + 1, buyer: o.buyer, tokenId: Number(o.tokenId), amount: E(o.amount), amountWei: o.amount, expiresAt: Number(o.expiresAt), active: o.active }));
+    const saleEvents = this.events.filter((e) => e.name === "Sale").map((e) => ({ kind: e.args.kind, tokenId: e.args.tokenId, seller: e.args.seller, buyer: e.args.buyer, price: e.args.price, fee: e.args.fee, refId: e.args.refId, time: e.args.timestamp, txHash: e.txHash }));
+    let me = null;
+    if (this.account) {
+      const R = ROLE_IDS();
+      const [bal, bankOwn, appr, age, blk, ...roles] = await Promise.all([
+        this.kbC.balanceOf(this.account), this.bankC.balanceOf(this.account), this.rwaC.isApprovedForAll(this.account, this.dep.market),
+        this.rwaC.ageVerified(this.account), this.bankC.isBlacklisted(this.account),
+        this.rwaC.hasRole(R.admin, this.account), this.rwaC.hasRole(R.minter, this.account), this.rwaC.hasRole(R.custodian, this.account),
+        this.rwaC.hasRole(R.compliance, this.account), this.mktC.hasRole(R.pauser, this.account), this.mktC.hasRole(R.admin, this.account),
+        this.bankC.hasRole(R.admin, this.account), this.bankC.hasRole(R.pauser, this.account),
+      ]);
+      const names = ["admin", "minter", "custodian", "compliance", "pauser", "marketAdmin", "bankAdmin", "bankPauser"];
+      me = { address: this.account, kb: E(bal), kbMax: ethers.formatEther(bal), bank: E(bankOwn), bankMax: ethers.formatEther(bankOwn), blacklisted: blk, approvedForAll: appr, ageVerified: age, roles: names.filter((_, i) => roles[i]) };
+    }
+    return { bottles, listings, auctions, offers, sales: saleEvents, events: this.events, stats: { totalVolume: E(vol), totalSales: Number(sales), accruedFees: E(accrued), feeBps: Number(fee), paused }, me,
+      bank: { name: this._bankName, reserve: E(bankBal[0]), total: E(bankBal[1]), paused: bankPaused, address: this.dep.bank }, complianceRequired: compReq, marketAddress: this.dep.market };
+  }
+  /* ── 平台帳戶（KinmenBank）：存款前先授權本次金額；交易前檢查餘額，不足時先入金差額 ── */
+  async depositWei(wei) {
+    const allow = await this.kbC.allowance(this.account, this.dep.bank);
+    if (allow < wei) { toast("需要先授權平台帳戶動用錢包中的 KB（只授權本次存款金額）", "warn"); await this.send(this.w(this.kbC).approve(this.dep.bank, wei)); }
+    return this.send(this.w(this.bankC).deposit(wei));
+  }
+  deposit(amount) { return this.depositWei(ethers.parseEther(String(amount))); }
+  withdraw(amount) { return this.send(this.w(this.bankC).withdraw(ethers.parseEther(String(amount)))); }
+  transfer(to, amount) { return this.send(this.w(this.bankC).transfer(to, ethers.parseEther(String(amount)))); }
+  async ensureBankWei(wei) {
+    const own = await this.bankC.balanceOf(this.account);
+    if (own >= wei) return;
+    const gap = wei - own, wallet = await this.kbC.balanceOf(this.account);
+    if (wallet < gap) throw new Error(`平台帳戶餘額 ${kb(Number(ethers.formatEther(own)))} 不足，錢包也只有 ${kb(Number(ethers.formatEther(wallet)))}；請先到「平台帳戶」領取測試幣並入金`);
+    toast(`平台帳戶餘額不足，先從錢包入金差額 ${kb(Number(ethers.formatEther(gap)))}`, "warn");
+    await this.depositWei(gap);
+  }
+  bankPause(p) { return this.send(p ? this.w(this.bankC).pause() : this.w(this.bankC).unpause()); }
+  setBlacklist(a, v) { return this.send(this.w(this.bankC).setBlacklist(a, v)); }
+  async ensureNft() {
+    if (!(await this.rwaC.isApprovedForAll(this.account, this.dep.market))) { toast("需要先授權市場合約託管您的老酒 NFT", "warn"); await this.send(this.w(this.rwaC).setApprovalForAll(this.dep.market, true)); }
+  }
+  P(n) { return ethers.parseEther(String(n)); }
+  claim() { return this.send(this.w(this.kbC).claim()); }
+  async list(tokenId, price) { await this.ensureNft(); return this.send(this.w(this.mktC).list(tokenId, this.P(price))); }
+  updatePrice(id, price) { return this.send(this.w(this.mktC).updatePrice(id, this.P(price))); }
+  cancelListing(id) { return this.send(this.w(this.mktC).cancelListing(id)); }
+  async buy(id, maxPrice, listing) { const wei = listing?.priceWei ?? this.P(maxPrice); await this.ensureBankWei(wei); return this.send(this.w(this.mktC).buy(id, wei)); }
+  async createAuction(tokenId, reserve, duration) { await this.ensureNft(); return this.send(this.w(this.mktC).createAuction(tokenId, this.P(reserve), duration)); }
+  minNextBid(a) {
+    const hb = a.highestBidWei ?? 0n;
+    if (hb === 0n) return a.reservePrice;
+    return Math.ceil(Number(ethers.formatEther(hb + (hb * 500n + 9999n) / 10000n)) * 100) / 100;
+  }
+  async bid(id, amount) { const wei = this.P(amount); await this.ensureBankWei(wei); return this.send(this.w(this.mktC).bid(id, wei)); }
+  settleAuction(id) { return this.send(this.w(this.mktC).settleAuction(id)); }
+  cancelAuction(id) { return this.send(this.w(this.mktC).cancelAuction(id)); }
+  async makeOffer(tokenId, amount, duration) { const wei = this.P(amount); await this.ensureBankWei(wei); return this.send(this.w(this.mktC).makeOffer(tokenId, wei, duration)); }
+  cancelOffer(id) { return this.send(this.w(this.mktC).cancelOffer(id)); }
+  async acceptOffer(id, inEscrow) { if (!inEscrow) await this.ensureNft(); return this.send(this.w(this.mktC).acceptOffer(id)); }
+  requestRedemption(tokenId, ref) { return this.send(this.w(this.rwaC).requestRedemption(tokenId, ref)); }
+  cancelRedemption(tokenId) { return this.send(this.w(this.rwaC).cancelRedemption(tokenId)); }
+  approveRedemption(tokenId) { return this.send(this.w(this.rwaC).approveRedemption(tokenId)); }
+  rejectRedemption(tokenId, reason) { return this.send(this.w(this.rwaC).rejectRedemption(tokenId, reason)); }
+  setFrozen(tokenId, frozen, reason) { return this.send(this.w(this.rwaC).setFrozen(tokenId, frozen, reason)); }
+  pause(p) { return this.send(p ? this.w(this.mktC).pause() : this.w(this.mktC).unpause()); }
+  withdrawFees() { return this.send(this.w(this.mktC).withdrawFees(this.account)); }
+  setComplianceRequired(v) { return this.send(this.w(this.rwaC).setComplianceRequired(v)); }
+  setAgeVerified(a, v) { return this.send(this.w(this.rwaC).setAgeVerified(a, v)); }
+  async tokenByUidHash(uidHash) { return Number(await this.rwaC.tokenOfUid(uidHash)); }
+  async lastAcceptedCounterAsync(uidHash) { const id = await this.tokenByUidHash(uidHash); if (!id) return -1; return Number((await this.rwaC.bottleOf(id)).lastSunCounter); }
+  domain() { return { name: "KinmenLiquorRWA", version: "1", chainId: this.chainId, verifyingContract: this.dep.rwa }; }
+  async verifyAndRecord(result) {
+    // 本機鏈：以 Hardhat 測試帳號 #1（驗證服務角色）簽發收據；測試網：使用驗證服務回傳之收據
+    let receipt = result.receipt, signature = result.signature;
+    if (!receipt) {
+      if (!this.isLocal) throw new Error("請於設定中填入驗證服務網址，以取得鏈上驗證收據");
+      const tokenId = await this.tokenByUidHash(result.uidHash);
+      const t = Number((await this.provider.getBlock("latest")).timestamp);
+      receipt = { tokenId, uidHash: result.uidHash, sunCounter: result.counter, intact: result.intact, verifiedAt: t, deadline: t + 900 };
+      signature = await this.devWallet(1).signTypedData(this.domain(), { VerificationReceipt: [{ name: "tokenId", type: "uint256" }, { name: "uidHash", type: "bytes32" }, { name: "sunCounter", type: "uint32" }, { name: "intact", type: "bool" }, { name: "verifiedAt", type: "uint64" }, { name: "deadline", type: "uint64" }] }, receipt);
+    }
+    return this.send(this.w(this.rwaC).recordVerification(receipt, signature));
+  }
+  async mint(form, sun, apiKey) {
+    let request, signature;
+    if (this.isLocal && !settings().verifierUrl) {
+      const t = Number((await this.provider.getBlock("latest")).timestamp);
+      request = { to: form.to, uidHash: sun.uidHash, vintage: form.vintage, product: form.product, cellar: form.cellar, uri: form.uri, sunCounter: sun.counter, deadline: t + 900 };
+      signature = await this.devWallet(1).signTypedData(this.domain(), { MintRequest: [{ name: "to", type: "address" }, { name: "uidHash", type: "bytes32" }, { name: "vintage", type: "uint16" }, { name: "product", type: "string" }, { name: "cellar", type: "string" }, { name: "uri", type: "string" }, { name: "sunCounter", type: "uint32" }, { name: "deadline", type: "uint64" }] }, request);
+    } else {
+      const res = await fetch(`${settings().verifierUrl}/api/mint-attestation`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": apiKey ?? "" }, body: JSON.stringify({ sunUrl: form.sunUrl, to: form.to, vintage: form.vintage, product: form.product, cellar: form.cellar, uri: form.uri }) });
+      const j = await res.json();
+      if (!res.ok) throw new Error(`驗證服務拒絕：${j.error ?? res.status}`);
+      request = j.request; signature = j.signature;
+    }
+    return this.send(this.w(this.rwaC).mintWithAttestation(request, signature));
+  }
+}
+
+/* ════════════════════════ 應用狀態 ════════════════════════ */
+const app = { chain: null, snap: null, view: "market", category: "ALL", openToken: null, lastSun: null, camera: null, addrCamera: null, feedSeen: new Set(), busy: false };
+function settings() { return store.get("kinmen-rwa-settings-v1", {}); }
+function currentDeployment(chainId) { const o = settings().overrides?.[chainId]; return o?.rwa ? o : CONFIG.deployments[chainId]; }
+
+function derive() {
+  const s = app.snap; if (!s) return [];
+  const now = nowSec();
+  return s.bottles.filter((b) => b.status !== 3 && b.status !== 0).map((b) => {
+    const listing = s.listings.find((l) => l.active && l.tokenId === b.tokenId) ?? null;
+    const auction = s.auctions.find((a) => !a.settled && a.tokenId === b.tokenId) ?? null;
+    const offers = s.offers.filter((o) => o.active && o.tokenId === b.tokenId && o.expiresAt > now).sort((x, y) => y.amount - x.amount);
+    const holder = listing?.seller ?? auction?.seller ?? b.owner;
+    const lastSale = [...s.sales].reverse().find((x) => x.tokenId === b.tokenId) ?? null;
+    const meta = b.meta ?? {};
+    const attr = (k) => meta.attributes?.find((a) => a.trait_type === k)?.value;
+    const name = (meta.name ?? b.product.split("｜")[0]).replace(/\s#\d+$/, "");
+    const category = attr("系列") ?? (CATEGORIES.find((c) => b.product.includes(c.slice(0, 2))) ?? "陳年高粱");
+    const price = listing ? listing.price : auction ? (auction.highestBid || auction.reservePrice) : null;
+    return { ...b, listing, auction, offers, holder, lastSale, name, category, volume: attr("容量"), abv: attr("酒精濃度"), price };
+  });
+}
+const myAddr = () => app.snap?.me?.address ?? null;
+const isMine = (row) => same(row.holder, myAddr());
+const whoLabel = (a) => {
+  if (!a) return "—";
+  if (a === "MARKET") return "市場託管";
+  if (same(a, myAddr())) return `<span class="me">我</span>`;
+  const n = app.chain.nameOf?.(a);
+  return n ? `<span title="${esc(a)}">${esc(n)}</span>` : `<span class="owner" title="${esc(a)}">${esc(short(a))}</span>`;
+};
+function bottleSvg(cat, h = 44) {
+  const label = { 特級老酒: "var(--cat-premium)", 陳年高粱: "var(--cat-aged)", 絕版黑金剛: "var(--cat-black)", 紀念酒款: "var(--cat-commem)" }[cat] ?? "var(--accent)";
+  const body = cat === "絕版黑金剛" ? "var(--cat-black)" : "var(--porcelain)";
+  return `<svg viewBox="0 0 40 64" width="${Math.round(h * 0.625)}" height="${h}" aria-hidden="true" style="flex:none"><rect x="15" y="2" width="10" height="7" rx="1.5" fill="var(--seal)"/><path d="M16 9h8v8c0 2 6 4 6 9v30a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6V26c0-5 6-7 6-9z" fill="${body}" stroke="var(--line-strong)" stroke-width="1"/><rect x="10.5" y="32" width="19" height="15" fill="${label}"/><rect x="10.5" y="34.5" width="19" height="0.8" fill="var(--porcelain)" opacity=".7"/><rect x="10.5" y="44.2" width="19" height="0.8" fill="var(--porcelain)" opacity=".7"/></svg>`;
+}
+function sealHtml(b) {
+  if (b.status === 3) return `<span class="statusline"><span class="seal gone">出</span>已出庫</span>`;
+  if (b.frozen) return `<span class="statusline"><span class="seal broken">封</span><span style="color:var(--seal)">標籤異常・凍結</span></span>`;
+  if (b.status === 2) return `<span class="statusline"><span class="seal pending">提</span><span style="color:var(--warn)">提領中・鎖定</span></span>`;
+  return `<span class="statusline"><span class="seal">封</span>封條完好</span>`;
+}
+function saleCell(r) {
+  if (r.listing) return `<span class="price">${kb(r.listing.price)}</span><br><span class="pill accent">直購</span>`;
+  if (r.auction) {
+    const ended = r.auction.endAt <= nowSec();
+    return `<span class="price">${kb(r.auction.highestBid || r.auction.reservePrice)}</span><br><span class="pill ${ended ? "warn" : "good"}">${r.auction.highestBid ? "競標最高價" : "競標底價"}・<span data-countdown="${r.auction.endAt}">${countdown(r.auction.endAt)}</span></span>`;
+  }
+  return `<span class="muted">未上架</span>`;
+}
+
+/* ════════════════════════ 渲染 ════════════════════════ */
+function render() {
+  if (!app.snap) return;
+  renderHeader(); renderSide(); renderFeed();
+  ({ market: renderMarket, vault: renderVault, bank: renderBank, registry: renderRegistry, verify: renderVerifyTools, admin: renderAdmin })[app.view]?.();
+  const ae = document.activeElement;
+  const typing = ae && ae.closest?.("#dialog") && /INPUT|SELECT|TEXTAREA/.test(ae.tagName);
+  if (app.openToken !== null && !$("#overlay").hidden && $("#dialog").dataset.kind === "bottle" && !typing) openBottle(app.openToken, true);
+}
+function renderHeader() {
+  const c = app.chain, me = app.snap.me;
+  $("#modeChip").classList.toggle("live", c.kind === "evm");
+  $("#modeText").textContent = c.kind === "evm" ? c.label : "展示模式";
+  $("#kbBalance").textContent = me ? nf.format(me.bank) : "—";
+  const sel = $("#identitySelect"), ids = c.identities;
+  sel.hidden = !ids;
+  if (ids && sel.options.length !== ids.length) sel.innerHTML = ids.map((x) => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("");
+  if (ids) { const cur = ids.find((x) => same(x.address, c.account)); if (cur) sel.value = cur.key; }
+  $("#connectBtn").hidden = c.kind === "demo";
+  $("#connectLabel").textContent = c.account && c.kind === "evm" ? short(c.account) : "連接錢包";
+  const banner = $("#modeBanner");
+  if (c.kind === "demo") {
+    banner.hidden = false;
+    banner.innerHTML = `${icon("alert")}<p><b>展示模式</b>：目前未偵測到已部署的合約（或網路無法連線），以下為展示資料，所有交易只在本頁以 JavaScript 依合約規則模擬，不會上鏈。可用右上角切換身分體驗買方、賣方與倉儲管理者。</p><span class="actions"><button class="btn small" type="button" data-action="demo-ff">展示時鐘 +1 天</button><button class="btn small" type="button" data-action="demo-reset">重設展示資料</button><button class="btn small" type="button" data-action="open-settings">合約設定</button></span>`;
+  } else {
+    banner.hidden = !(!c.account);
+    banner.innerHTML = c.account ? "" : `${icon("wallet")}<p>已連上 <b>${esc(c.label)}</b> 的合約，目前為唯讀瀏覽。${c.isLocal ? "可在右上角選擇 Hardhat 測試帳號直接交易，或" : ""}連接錢包後即可交易。</p>`;
+  }
+}
+/** 我在市場託管中的金額：有效的收購出價＋目前領先的競標出價 */
+function myEscrow(addr) {
+  const s = app.snap;
+  return s.offers.filter((o) => o.active && same(o.buyer, addr)).reduce((n, o) => n + o.amount, 0)
+    + s.auctions.filter((a) => !a.settled && same(a.highestBidder, addr)).reduce((n, a) => n + a.highestBid, 0);
+}
+const isMarketAcct = (a) => a === "MARKET" || same(a, app.snap?.marketAddress);
+function txLink(h) { const u = app.chain.explorerTx?.(h); return u ? `<a href="${u}" target="_blank" rel="noopener" class="mono">${short(h)}</a>` : `<span class="mono muted">${short(h)}</span>`; }
+function renderSide() {
+  const me = app.snap.me, rows = derive();
+  const mineCount = me ? rows.filter(isMine).length : 0;
+  $("#sideBank").textContent = me ? kb(me.bank) : "未連接";
+  $("#sideKb").textContent = me ? kb(me.kb) : "—";
+  $("#sideEscrow").textContent = me ? kb(myEscrow(me.address)) : "—";
+  $("#sideBottles").textContent = me ? `${mineCount} 瓶` : "—";
+  $("#mKb").textContent = me ? kb(me.bank) : "—";
+  $("#mBottles").textContent = me ? `${mineCount} 瓶` : "—";
+  const chips = ["ALL", ...CATEGORIES].map((c) => `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${app.category === c}">${c === "ALL" ? "所有酒款" : esc(c)}</button>`).join("");
+  $("#sideCategories").innerHTML = chips;
+  $("#marketCategories").innerHTML = chips;
+}
+const bottleName = (b) => (b.meta?.name ?? b.product.split("｜")[0]).replace(/\s#\d+$/, "");
+function feedLine(e, names) {
+  const nameOf = (id) => names[Number(id)] ?? `#${id}`;
+  const a = e.args, aucTok = (id) => app.snap.auctions.find((x) => x.id === Number(id))?.tokenId;
+  switch (e.name) {
+    case "Sale": return ["sale", "成交", `#${a.tokenId} ${nameOf(a.tokenId)}｜${KIND_LABEL[["FixedPrice", "Auction", "Offer"].indexOf(a.kind)] ?? ""} ${kb(a.price)}`];
+    case "Listed": return ["", "上架", `#${a.tokenId} ${nameOf(a.tokenId)}｜${kb(a.price)}`];
+    case "AuctionCreated": return ["bid", "開標", `#${a.tokenId} ${nameOf(a.tokenId)}｜底價 ${kb(a.reservePrice)}`];
+    case "BidPlaced": return ["bid", "出價", `#${aucTok(a.auctionId)} ${nameOf(aucTok(a.auctionId))}｜${kb(a.amount)}`];
+    case "OfferMade": return ["bid", "收購出價", `#${a.tokenId} ${nameOf(a.tokenId)}｜${kb(a.amount)}`];
+    case "BottleMinted": return ["", "入庫鑄造", `#${a.tokenId} ${nameOf(a.tokenId)}`];
+    case "PhysicalVerified": return [a.intact ? "" : "alert", "實體驗證", `#${a.tokenId}｜第 ${a.sunCounter} 次感應・${a.intact ? "封條完好" : "已拆封"}`];
+    case "TamperAlert": return ["alert", "拆封警示", `#${a.tokenId} ${nameOf(a.tokenId)} 已凍結`];
+    case "RedemptionRequested": return ["", "申請提領", `#${a.tokenId} ${nameOf(a.tokenId)}`];
+    case "Redeemed": return ["sale", "出庫交付", `#${a.tokenId} ${nameOf(a.tokenId)}（Token 已銷毀）`];
+    default: return null;
+  }
+}
+function renderFeed() {
+  const names = Object.fromEntries(app.snap.bottles.map((b) => [b.tokenId, bottleName(b)]));
+  const items = [...app.snap.events].reverse().slice(0, 80).map((e) => ({ e, l: feedLine(e, names) })).filter((x) => x.l).slice(0, 14);
+  if (!items.length) { $("#feed").innerHTML = `<li><span class="muted">尚無鏈上事件</span></li>`; return; }
+  $("#feed").innerHTML = items.map(({ e, l }) => {
+    const key = `${e.txHash}:${e.name}:${e.logIndex ?? ""}`;
+    const fresh = app.feedSeen.size > 0 && !app.feedSeen.has(key);
+    app.feedSeen.add(key);
+    return `<li class="${fresh ? "fresh" : ""}"><span class="tag ${l[0]}">${esc(l[1])}</span><span>${esc(l[2])}</span><span class="when">${e.time ? ago(e.time) : ""}</span></li>`;
+  }).join("");
+}
+function filteredRows() {
+  const q = $("#searchInput").value.trim().toLowerCase(), f = $("#saleFilter").value, sort = $("#sortSelect").value;
+  let rows = derive().filter((r) => app.category === "ALL" || r.category === app.category)
+    .filter((r) => !q || [r.name, r.product, r.cellar, String(r.vintage), `#${r.tokenId}`, roc(r.vintage)].some((x) => String(x).toLowerCase().includes(q)))
+    .filter((r) => f === "all" || (f === "fixed" && r.listing) || (f === "auction" && r.auction) || (f === "offerable" && r.status === 1 && !r.frozen && !r.auction));
+  const by = { id: (a, b) => a.tokenId - b.tokenId, priceAsc: (a, b) => (a.price ?? 1e18) - (b.price ?? 1e18), priceDesc: (a, b) => (b.price ?? -1) - (a.price ?? -1), vintage: (a, b) => a.vintage - b.vintage }[sort];
+  return rows.sort(by);
+}
+function renderMarket() {
+  const rows = filteredRows();
+  if (!rows.length) { $("#marketBody").innerHTML = `<tr><td colspan="6" class="empty">沒有符合條件的老酒</td></tr>`; $("#marketCards").innerHTML = `<div class="empty">沒有符合條件的老酒</div>`; return; }
+  $("#marketBody").innerHTML = rows.map((r) => `<tr data-token="${r.tokenId}" tabindex="0">
+    <td><div class="wine">${bottleSvg(r.category)}<div><div class="wine-name">${esc(r.name)} <span class="muted mono">#${r.tokenId}</span></div><div class="wine-meta">${esc(r.category)}・${r.vintage}（${roc(r.vintage)}）・${esc(r.cellar)}</div></div></div></td>
+    <td>${sealHtml(r)}</td><td class="r">${saleCell(r)}</td>
+    <td class="r">${r.offers[0] ? `<span class="price">${kb(r.offers[0].amount)}</span><br><span class="muted" style="font-size:12px">${r.offers.length} 筆出價</span>` : `<span class="muted">—</span>`}</td>
+    <td class="r">${r.lastSale ? `<span class="price">${kb(r.lastSale.price)}</span><br><span class="muted" style="font-size:12px">${ago(r.lastSale.time)}</span>` : `<span class="muted">—</span>`}</td>
+    <td class="r">${whoLabel(r.holder)}</td></tr>`).join("");
+  $("#marketCards").innerHTML = rows.map((r) => `<div class="bottle-card" data-token="${r.tokenId}" tabindex="0">${bottleSvg(r.category, 56)}
+    <div style="min-width:0"><div class="wine-name">${esc(r.name)} <span class="muted mono">#${r.tokenId}</span></div><div class="wine-meta">${r.vintage}（${roc(r.vintage)}）・${esc(r.cellar)}</div></div>
+    <div class="row">${sealHtml(r)}<span>${whoLabel(r.holder)}</span></div><div class="row">${saleCell(r).replace("<br>", " ")}</div></div>`).join("");
+}
+function renderVault() {
+  const me = app.snap.me;
+  if (!me) { $("#vaultBody").innerHTML = `<tr><td colspan="5" class="empty">請先連接錢包或選擇身分</td></tr>`; $("#myBidsBody").innerHTML = ""; return; }
+  const rows = derive().filter(isMine).concat(app.snap.bottles.filter((b) => b.status === 3 && b.redemption && same(b.redemption.requester, me.address)).map((b) => ({ ...b, name: (b.meta?.name ?? b.product.split("｜")[0]).replace(/\s#\d+$/, ""), category: b.meta?.attributes?.find((a) => a.trait_type === "系列")?.value ?? "", offers: [] })));
+  $("#vaultBody").innerHTML = rows.length ? rows.map((r) => {
+    let st = "錢包持有", act = `<button class="btn small" type="button" data-open="${r.tokenId}">管理</button>`;
+    if (r.listing) st = `直購掛單 ${kb(r.listing.price)}`;
+    else if (r.auction) st = `競標中・最高 ${kb(r.auction.highestBid || r.auction.reservePrice)}`;
+    else if (r.status === 2) st = "已申請實體提領，等待倉儲審核";
+    else if (r.status === 3) { st = "已出庫交付"; act = ""; }
+    return `<tr data-token="${r.tokenId}"><td><div class="wine">${bottleSvg(r.category)}<div><div class="wine-name">${esc(r.name)} <span class="muted mono">#${r.tokenId}</span></div><div class="wine-meta">${r.vintage}・${esc(r.cellar)}</div></div></div></td><td>${sealHtml(r)}</td><td>${esc(st)}</td><td class="r">${r.offers?.[0] ? kb(r.offers[0].amount) : "—"}</td><td class="r">${act}</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">名下目前沒有老酒，可到市場直購、競標或出價收購。</td></tr>`;
+  const s = app.snap, now = nowSec(), lines = [];
+  for (const o of s.offers.filter((o) => o.active && same(o.buyer, me.address))) lines.push(`<tr><td>出價收購</td><td>#${o.tokenId}</td><td class="r price">${kb(o.amount)}</td><td>${o.expiresAt > now ? `<span class="pill good">有效至 ${fmtTime(o.expiresAt)}</span>` : `<span class="pill warn">已逾期，可取回</span>`}</td><td class="r"><button class="btn small" type="button" data-action="cancel-offer" data-id="${o.id}">撤回（退回平台帳戶）</button></td></tr>`);
+  for (const a of s.auctions.filter((a) => !a.settled && same(a.highestBidder, me.address))) lines.push(`<tr><td>競標最高出價</td><td>#${a.tokenId}</td><td class="r price">${kb(a.highestBid)}</td><td><span class="pill accent" data-countdown="${a.endAt}">${countdown(a.endAt)}</span></td><td class="r">${a.endAt <= now ? `<button class="btn small primary" type="button" data-action="settle" data-id="${a.id}">結算</button>` : ""}</td></tr>`);
+  $("#myBidsBody").innerHTML = lines.join("") || `<tr><td colspan="5" class="empty">目前沒有進行中的出價</td></tr>`;
+}
+/* ── 平台帳戶頁（版面依 NquBank 範例：連線設定、儀表板、存款／提款／轉帳、交易日誌） ── */
+function renderBank() {
+  const s = app.snap, me = s.me, c = app.chain, b = s.bank;
+  const explorer = c.kind === "evm" ? c.explorerAddr?.(b.address) : null;
+  $("#bankConn").innerHTML = `<dl class="kv" style="margin:0">
+      <dt>目標網路</dt><dd>${esc(c.kind === "demo" ? "展示模式（未連上合約，資料只在本頁模擬）" : `${c.label}（Chain ID ${c.chainId}）`)}</dd>
+      <dt>平台帳戶合約</dt><dd>${c.kind === "demo" ? "—" : explorer ? `<a href="${explorer}" target="_blank" rel="noopener">${esc(b.address)}</a>` : esc(b.address)}</dd>
+      <dt>連線帳號</dt><dd>${me ? esc(me.address) : "尚未連接"}</dd>
+      <dt>帳戶狀態</dt><dd>${b.paused ? `<span style="color:var(--seal)">暫停中（只能提款）</span>` : "正常"}${me?.blacklisted ? `・<span style="color:var(--seal)">此帳號在黑名單中</span>` : ""}</dd>
+    </dl>
+    <div class="actions" style="margin-top:10px">${c.kind === "evm" ? `<button class="btn small primary" type="button" data-action="connect-wallet">${icon("wallet")}${c.account && !c.isLocal ? "重新連接 MetaMask" : "連接 MetaMask"}</button>` : ""}<button class="btn small" type="button" data-action="open-settings">${icon("gear")}網路與合約設定</button>${explorer ? `<a class="btn small" href="${explorer}" target="_blank" rel="noopener">在區塊瀏覽器查看</a>` : ""}</div>`;
+  const matched = Math.abs(b.reserve - b.total) < 1e-9;
+  $("#bkTotal").textContent = kb(b.total);
+  $("#bkName").textContent = b.name ?? "—";
+  $("#bkReserve").textContent = `${kb(b.reserve)}・${matched ? "帳實相符" : "帳實不符"}`;
+  $("#bkMine").textContent = me ? kb(me.bank) : "—";
+  $("#bkWallet").textContent = me ? kb(me.kb) : "—";
+  $("#bkEscrow").textContent = me ? kb(myEscrow(me.address)) : "—";
+  $("#bkAddr").textContent = me ? me.address : "尚未連接";
+  const qr = $("#bkQr");
+  if (qr.dataset.addr !== (me?.address ?? "")) {
+    qr.innerHTML = ""; qr.dataset.addr = me?.address ?? "";
+    if (me && window.QRCode) { try { new QRCode(qr, { text: me.address, width: 120, height: 120, correctLevel: QRCode.CorrectLevel.H }); } catch { /* 略過 */ } }
+  }
+  if (!me) { $("#bankLog").innerHTML = `<tr><td colspan="5" class="empty">請先連接錢包或選擇身分</td></tr>`; return; }
+  const rows = s.events.filter((e) => (e.name === "TransferInternal" ? same(e.args.from, me.address) || same(e.args.to, me.address) : (e.name === "Deposit" || e.name === "Withdraw") && same(e.args.user, me.address)))
+    .slice(-60).reverse().map((e) => {
+      const a = e.args; let type, sign, who = "—";
+      if (e.name === "Deposit") { type = "存款（入金）"; sign = "+"; }
+      else if (e.name === "Withdraw") { type = "提款至錢包"; sign = "−"; }
+      else if (same(a.from, me.address)) { sign = "−"; if (isMarketAcct(a.to)) type = "交易付款／出價託管"; else { type = "轉出"; who = whoLabel(a.to); } }
+      else { sign = "+"; if (isMarketAcct(a.from)) type = "成交入帳／出價退回"; else { type = "轉入"; who = whoLabel(a.from); } }
+      return `<tr><td class="mono">${e.time ? fmtTime(e.time) : "—"}</td><td>${type}</td><td class="r price" style="color:${sign === "+" ? "var(--good)" : "inherit"}">${sign}${kb(a.amount)}</td><td>${who}</td><td>${txLink(e.txHash)}</td></tr>`;
+    });
+  $("#bankLog").innerHTML = rows.join("") || `<tr><td colspan="5" class="empty">尚無帳戶紀錄，可先領取測試幣並存入平台帳戶</td></tr>`;
+}
+function renderRegistry() {
+  const s = app.snap, sales = [...s.sales].reverse();
+  const names = Object.fromEntries(s.bottles.map((b) => [b.tokenId, (b.meta?.name ?? b.product.split("｜")[0]).replace(/\s#\d+$/, "")]));
+  const avg = sales.length ? sales.reduce((n, x) => n + x.price, 0) / sales.length : 0;
+  $("#registryStats").innerHTML = [
+    ["累計成交筆數", `${s.stats.totalSales} 筆`, "Sale 事件"], ["累計成交總額", kb(s.stats.totalVolume), "含手續費"],
+    ["平均成交價", sales.length ? kb(Math.round(avg)) : "—", `${sales.length} 筆平均`], ["平台手續費率", `${(s.stats.feeBps / 100).toFixed(2)}%`, "上限 10%，掛單時鎖定"],
+  ].map(([k, v, sub]) => `<div class="card stat"><div class="label">${k}</div><div class="v">${v}</div><div class="sub">${sub}</div></div>`).join("");
+  const link = txLink;
+  $("#registryBody").innerHTML = sales.length ? sales.map((x) => `<tr data-token="${x.tokenId}"><td class="mono">${fmtTime(x.time)}</td><td>#${x.tokenId} ${esc(names[x.tokenId] ?? "")}</td><td>${KIND_LABEL[["FixedPrice", "Auction", "Offer"].indexOf(x.kind)] ?? esc(x.kind)}</td><td class="r price">${kb(x.price)}</td><td class="r price">${kb(x.fee)}</td><td>${whoLabel(x.buyer)}</td><td>${whoLabel(x.seller)}</td><td>${link(x.txHash)}</td></tr>`).join("") : `<tr><td colspan="8" class="empty">尚無成交紀錄</td></tr>`;
+}
+async function renderVerifyTools() {
+  const opts = app.snap.bottles.filter((b) => b.status !== 3).map((b) => `<option value="${b.tokenId}">#${b.tokenId} ${esc((b.meta?.name ?? b.product.split("｜")[0]).replace(/\s#\d+$/, ""))}</option>`).join("");
+  const sel = $("#simBottle"); const v = sel.value;
+  if (sel.dataset.sig !== opts) { sel.innerHTML = opts; sel.dataset.sig = opts; if (v) sel.value = v; }
+}
+function renderAdmin() {
+  const s = app.snap, me = s.me, roles = me?.roles ?? [];
+  const has = (r) => roles.includes(r) || (r === "admin" && roles.includes("marketAdmin"));
+  const roleNames = { admin: "管理者", minter: "鑄造者", custodian: "倉儲管理", compliance: "合規", pauser: "緊急暫停", bankAdmin: "平台帳戶管理" };
+  $("#adminRoles").innerHTML = me ? Object.entries(roleNames).map(([k, n]) => `<span class="pill ${has(k) ? "good" : "neutral"}">${has(k) ? icon("check") : ""}${n}</span>`).join("") + (roles.length ? "" : `<span class="muted" style="font-size:12.5px">目前帳號沒有管理角色${app.chain.identities ? "，可於右上角切換為管理者" : ""}</span>`) : `<span class="muted">請先連接錢包</span>`;
+  const b = s.bottles, inVault = b.filter((x) => x.status === 1).length, pending = b.filter((x) => x.status === 2).length, frozen = b.filter((x) => x.frozen && x.status !== 3).length;
+  $("#adminStats").innerHTML = `
+    <div class="card stat"><div class="label">平台總成交額</div><div class="v">${kb(s.stats.totalVolume)}</div><div class="sub">${s.stats.totalSales} 筆成交</div></div>
+    <div class="card stat"><div class="label">累積手續費（${(s.stats.feeBps / 100).toFixed(1)}%）</div><div class="v" style="color:var(--accent)">${kb(s.stats.accruedFees)}</div><div class="sub"><button class="btn small" type="button" data-action="withdraw-fees" ${has("admin") ? "" : "disabled"}>撥入目前帳號的平台帳戶</button></div></div>
+    <div class="card stat"><div class="label">在庫／提領中／凍結</div><div class="v">${inVault}／${pending}／${frozen}</div><div class="sub">已出庫 ${b.filter((x) => x.status === 3).length} 瓶</div></div>
+    <div class="card stat"><div class="label">市場合約狀態</div><div class="v" style="color:${s.stats.paused ? "var(--seal)" : "var(--good)"}">${s.stats.paused ? "緊急暫停中" : "正常運作"}</div><div class="sub"><button class="btn small ${s.stats.paused ? "good" : "danger"}" type="button" data-action="toggle-pause" ${has("pauser") ? "" : "disabled"}>${s.stats.paused ? "恢復營運" : "緊急暫停"}</button></div></div>`;
+  const bk = s.bank, escrowAll = s.stats.accruedFees + s.offers.filter((o) => o.active).reduce((n, o) => n + o.amount, 0) + s.auctions.filter((a) => !a.settled).reduce((n, a) => n + a.highestBid, 0);
+  $("#bankAdminStats").innerHTML = `
+    <div class="card stat"><div class="label">帳上總額</div><div class="v">${kb(bk.total)}</div><div class="sub">合約實際持有 ${kb(bk.reserve)}・${Math.abs(bk.reserve - bk.total) < 1e-9 ? "帳實相符" : "帳實不符"}</div></div>
+    <div class="card stat"><div class="label">市場託管中</div><div class="v">${kb(escrowAll)}</div><div class="sub">有效出價、競標最高價與累積手續費</div></div>
+    <div class="card stat"><div class="label">平台帳戶狀態</div><div class="v" style="color:${bk.paused ? "var(--seal)" : "var(--good)"}">${bk.paused ? "暫停中" : "正常運作"}</div><div class="sub"><button class="btn small ${bk.paused ? "good" : "danger"}" type="button" data-action="toggle-bank-pause" ${has("bankPauser") ? "" : "disabled"}>${bk.paused ? "恢復存款與轉帳" : "暫停存款與轉帳"}</button></div></div>`;
+  const q = b.filter((x) => x.status === 2);
+  $("#redemptionBody").innerHTML = q.length ? q.map((x) => `<tr><td>#${x.tokenId} ${esc((x.meta?.name ?? x.product.split("｜")[0]).replace(/\s#\d+$/, ""))}<div class="wine-meta">${esc(x.cellar)}</div></td><td>${whoLabel(x.redemption?.requester ?? x.owner)}</td><td class="mono">${fmtTime(x.redemption?.requestedAt)}</td><td class="mono" title="${esc(x.redemption?.deliveryRef)}">${esc(short(x.redemption?.deliveryRef))}</td><td class="r"><span class="actions" style="justify-content:flex-end"><button class="btn small good" type="button" data-action="approve-redeem" data-id="${x.tokenId}" ${has("custodian") ? "" : "disabled"}>核准出庫（Burn）</button><button class="btn small" type="button" data-action="reject-redeem" data-id="${x.tokenId}" ${has("custodian") ? "" : "disabled"}>駁回</button></span></td></tr>`).join("") : `<tr><td colspan="5" class="empty">目前沒有待審核的提領申請</td></tr>`;
+  const now = nowSec(), issues = [];
+  for (const x of b.filter((x) => x.frozen && x.status !== 3)) issues.push(`<tr><td>#${x.tokenId} 標籤異常</td><td>最近一次感應回報封條已拆封，已凍結交易。請到倉位 ${esc(x.cellar)} 實地檢查。</td><td class="r"><button class="btn small" type="button" data-action="unfreeze" data-id="${x.tokenId}" ${has("custodian") ? "" : "disabled"}>解除凍結</button></td></tr>`);
+  for (const a of s.auctions.filter((a) => !a.settled && a.endAt <= now)) issues.push(`<tr><td>競標 #${a.id} 待結算</td><td>#${a.tokenId} 已於 ${fmtTime(a.endAt)} 結束，任何人皆可結算。</td><td class="r"><button class="btn small primary" type="button" data-action="settle" data-id="${a.id}">結算</button></td></tr>`);
+  $("#issuesBody").innerHTML = issues.join("") || `<tr><td colspan="3" class="empty">沒有待處理項目</td></tr>`;
+  $("#complianceState").className = `pill ${s.complianceRequired ? "good" : "neutral"}`;
+  $("#complianceState").textContent = s.complianceRequired ? "合規模式：開啟（僅限已年齡驗證地址交易）" : "合規模式：關閉（測試網展示）";
+  if (!$("#mintTo").value && me) $("#mintTo").value = me.address;
+  $("#apiKeyField").hidden = !(app.chain.kind === "evm" && !app.chain.isLocal);
+  $("#mintHint").textContent = has("minter") ? "" : "目前帳號不具 MINTER_ROLE，送出會被合約拒絕";
+}
+
+/* ════════════════════════ 老酒詳情對話框 ════════════════════════ */
+function openDialog(html, kind, narrow = false) {
+  const d = $("#dialog");
+  d.className = `dialog${narrow ? " narrow" : ""}`;
+  d.dataset.kind = kind;
+  d.innerHTML = html;
+  $("#overlay").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+function closeDialog() { stopCam(app.addrCamera); app.addrCamera = null; $("#overlay").hidden = true; document.body.style.overflow = ""; app.openToken = null; $("#dialog").innerHTML = ""; }
+function tokenOfEvent(e) {
+  const a = e.args, s = app.snap;
+  if (a.tokenId !== undefined) return Number(a.tokenId);
+  if (a.auctionId !== undefined) return s.auctions.find((x) => x.id === Number(a.auctionId))?.tokenId;
+  if (a.listingId !== undefined) return s.listings.find((x) => x.id === Number(a.listingId))?.tokenId;
+  if (a.offerId !== undefined) return s.offers.find((x) => x.id === Number(a.offerId))?.tokenId;
+  return undefined;
+}
+function timelineFor(id) {
+  const s = app.snap, out = [];
+  for (const e of s.events) {
+    const a = e.args;
+    if (tokenOfEvent(e) !== id) continue;
+    const t = {
+      BottleMinted: ["", `入庫鑑定並鑄造（SUN 驗證通過、驗證服務簽章）`], PhysicalVerified: [a.intact ? "" : "alert", `實體標籤驗證：第 ${a.sunCounter} 次感應・${a.intact ? "封條完好" : "已拆封"}`],
+      TamperAlert: ["alert", "拆封警示：自動凍結交易"], FrozenSet: [a.frozen ? "alert" : "", a.frozen ? `凍結：${a.reason ?? ""}` : `解除凍結：${a.reason ?? ""}`],
+      Listed: ["", `上架直購 ${kb(a.price)}`], ListingPriceUpdated: ["", `調整售價為 ${kb(a.newPrice ?? a.price)}`], ListingClosed: ["", "掛單關閉"],
+      AuctionCreated: ["", `發起競標，底價 ${kb(a.reservePrice)}`], BidPlaced: ["", `競標出價 ${kb(a.amount)}`], AuctionSettled: ["sale", a.winner ? "競標結算完成" : "流標，退回賣方"], AuctionVoided: ["alert", "競標作廢並退款"],
+      OfferMade: ["", `收到收購出價 ${kb(a.amount)}`], Sale: ["sale", `成交（${KIND_LABEL[["FixedPrice", "Auction", "Offer"].indexOf(a.kind)] ?? ""}）${kb(a.price)}`],
+      RedemptionRequested: ["", "持有人申請實體提領（NFT 鎖定）"], RedemptionCancelled: ["", `提領申請取消${a.reason ? `：${a.reason}` : ""}`], Redeemed: ["sale", "倉儲核准出庫，NFT 銷毀（Burn）"],
+    }[e.name];
+    if (t) out.push(`<li class="${t[0]}"><time>${fmtTime(e.time)}</time>${esc(t[1])}</li>`);
+  }
+  return out.length ? `<ol class="timeline">${out.reverse().join("")}</ol>` : `<p class="muted" style="margin:0">尚無紀錄</p>`;
+}
+function openBottle(id, refresh = false) {
+  const r = derive().find((x) => x.tokenId === Number(id)) ?? null;
+  const raw = app.snap.bottles.find((x) => x.tokenId === Number(id));
+  if (!raw) return toast("找不到此 Token", "err");
+  const row = r ?? { ...raw, name: (raw.meta?.name ?? raw.product.split("｜")[0]).replace(/\s#\d+$/, ""), category: "", offers: [], holder: null };
+  app.openToken = row.tokenId;
+  const me = myAddr(), mine = same(row.holder, me), tradable = row.status === 1 && !row.frozen;
+  const paused = app.snap.stats.paused;
+  let box = "";
+  if (row.status === 3) box = `<p class="muted" style="margin:0">此瓶已出庫交付，產權 NFT 已銷毀，履歷永久保留於鏈上。</p>`;
+  else if (!me) box = `<p class="muted" style="margin:0">連接錢包（或於展示模式切換身分）後即可交易。</p>`;
+  else if (mine) {
+    const parts = [];
+    if (row.listing) parts.push(`<div class="inline-form"><input id="newPrice" type="number" min="1" step="any" value="${row.listing.price}" aria-label="新售價"><button class="btn small" type="button" data-action="update-price" data-id="${row.listing.id}">調整售價</button><button class="btn small danger" type="button" data-action="cancel-listing" data-id="${row.listing.id}">撤下掛單</button></div>`);
+    else if (row.auction) parts.push(`<p style="margin:0">競標中，目前 ${row.auction.highestBid ? `最高出價 <b class="price">${kb(row.auction.highestBid)}</b>` : `尚無人出價（底價 ${kb(row.auction.reservePrice)}）`}，<span data-countdown="${row.auction.endAt}">${countdown(row.auction.endAt)}</span></p><div class="actions">${row.auction.highestBidder ? "" : `<button class="btn small danger" type="button" data-action="cancel-auction" data-id="${row.auction.id}">取消競標</button>`}${row.auction.endAt <= nowSec() ? `<button class="btn small primary" type="button" data-action="settle" data-id="${row.auction.id}">結算</button>` : ""}</div>`);
+    else if (row.status === 2) parts.push(`<p style="margin:0">已申請實體提領，等待倉儲審核；核准後 NFT 將銷毀並安排出庫。</p><div class="actions"><button class="btn small" type="button" data-action="cancel-redeem" data-id="${row.tokenId}">撤回提領申請</button></div>`);
+    else if (tradable) parts.push(`<div class="inline-form"><input id="listPrice" type="number" min="1" step="any" placeholder="直購價（KB）" aria-label="直購價"><button class="btn small primary" type="button" data-action="list" data-id="${row.tokenId}" ${paused ? "disabled" : ""}>上架直購</button></div>
+      <div class="inline-form"><input id="auctionReserve" type="number" min="1" step="any" placeholder="競標底價（KB）" aria-label="競標底價"><select id="auctionDuration" aria-label="競標期間"><option value="600">10 分鐘（展示）</option><option value="3600">1 小時</option><option value="86400" selected>1 天</option><option value="259200">3 天</option><option value="604800">7 天</option></select><button class="btn small" type="button" data-action="create-auction" data-id="${row.tokenId}" ${paused ? "disabled" : ""}>發起競標</button></div>
+      <div class="actions"><button class="btn small" type="button" data-action="redeem-form" data-id="${row.tokenId}">申請實體提領</button></div>`);
+    else parts.push(`<p style="margin:0;color:var(--seal)">此瓶已凍結，暫停一切交易；請洽倉儲管理者。</p>`);
+    if (row.offers.length) parts.push(`<div><div class="label" style="margin-bottom:4px">收到的收購出價</div>${row.offers.map((o) => `<div class="inline-form" style="justify-content:space-between"><span><b class="price">${kb(o.amount)}</b> <span class="muted">來自 ${whoLabel(o.buyer)}・至 ${fmtTime(o.expiresAt)}</span></span><button class="btn small good" type="button" data-action="accept-offer" data-id="${o.id}" ${row.auction || paused ? "disabled" : ""}>接受成交</button></div>`).join("")}</div>`);
+    box = parts.join("");
+  } else {
+    const parts = [];
+    if (row.listing) parts.push(`<div class="actions"><button class="btn primary" type="button" data-action="buy" data-id="${row.listing.id}" ${paused || !tradable ? "disabled" : ""}>${icon("store")}直購 ${kb(row.listing.price)}</button><span class="muted" style="font-size:12.5px">從平台帳戶扣款（可用 ${kb(app.snap.me?.bank)}）・${(row.listing.feeBps / 100).toFixed(1)}% 手續費由賣方負擔</span></div>`);
+    if (row.auction) {
+      const min = app.chain.minNextBid(row.auction), ended = row.auction.endAt <= nowSec();
+      parts.push(`<p style="margin:0">競標${ended ? "已結束" : "進行中"}：${row.auction.highestBid ? `最高 <b class="price">${kb(row.auction.highestBid)}</b>（${whoLabel(row.auction.highestBidder)}）` : `底價 ${kb(row.auction.reservePrice)}`}・<span data-countdown="${row.auction.endAt}">${countdown(row.auction.endAt)}</span></p>` +
+        (ended ? `<div class="actions"><button class="btn small primary" type="button" data-action="settle" data-id="${row.auction.id}">結算競標</button></div>` : `<div class="inline-form"><input id="bidAmount" type="number" min="${min}" step="any" value="${min}" aria-label="出價金額"><button class="btn small primary" type="button" data-action="bid" data-id="${row.auction.id}" ${paused || !tradable ? "disabled" : ""}>出價（至少 ${kb(min)}）</button></div><span class="muted" style="font-size:12.5px">出價從平台帳戶扣除並託管；被超過時立即退回平台帳戶。結束前 5 分鐘內出價會延長 5 分鐘。</span>`));
+    }
+    if (tradable && !row.auction) {
+      const myOffer = row.offers.find((o) => same(o.buyer, me));
+      parts.push(myOffer ? `<div class="inline-form"><span>您的出價 <b class="price">${kb(myOffer.amount)}</b> 託管中</span><button class="btn small" type="button" data-action="cancel-offer" data-id="${myOffer.id}">撤回（退回平台帳戶）</button></div>`
+        : `<div class="inline-form"><input id="offerAmount" type="number" min="1" step="any" placeholder="收購出價（KB）" aria-label="收購出價"><select id="offerDuration" aria-label="出價有效期"><option value="86400">1 天</option><option value="259200">3 天</option><option value="604800" selected>7 天</option></select><button class="btn small" type="button" data-action="make-offer" data-id="${row.tokenId}" ${paused ? "disabled" : ""}>出價收購</button></div>`);
+    }
+    if (!tradable) parts.push(`<p style="margin:0;color:var(--warn)">${row.status === 2 ? "持有人已申請提領，此瓶暫停交易。" : "此瓶因標籤異常凍結，暫停交易。"}</p>`);
+    box = parts.join("") || `<p class="muted" style="margin:0">此瓶目前未上架。</p>`;
+  }
+  const lookup = `${pageBase()}?token=${row.tokenId}`;
+  const html = `<div class="dialog-head">${bottleSvg(row.category, 64)}<div style="min-width:0"><div class="label">${esc(row.category)}・Token #${row.tokenId}</div><h2 id="dialogTitle">${esc(row.name)}</h2><div style="margin-top:4px">${sealHtml(row)}</div></div><button class="btn ghost close" type="button" data-action="close" aria-label="關閉">${icon("x")}</button></div>
+  <div class="dialog-body">
+    <dl class="detail-grid" style="margin:0">
+      <div><dt>年份</dt><dd>${row.vintage}（${roc(row.vintage)}）</dd></div><div><dt>酒款規格</dt><dd>${esc(row.product.split("｜").slice(1).join("・") || row.product)}</dd></div>
+      <div><dt>恆溫倉位</dt><dd>${esc(row.cellar)}</dd></div><div><dt>持有者</dt><dd>${whoLabel(row.holder)}</dd></div>
+      <div><dt>晶片雜湊（uidHash）</dt><dd title="${esc(row.uidHash)}">${esc(short(row.uidHash))}</dd></div><div><dt>最近驗證</dt><dd>第 ${row.lastSunCounter} 次感應・${fmtTime(row.lastVerifiedAt)}</dd></div>
+      <div><dt>最近成交</dt><dd>${row.lastSale ? kb(row.lastSale.price) : "—"}</dd></div><div><dt>入庫時間</dt><dd>${fmtTime(row.mintedAt)}</dd></div>
+    </dl>
+    <div class="trade-box">${box}</div>
+    <div id="redeemPanel"></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start">
+      <div><div class="label" style="margin-bottom:8px">溯源履歷（鏈上事件）</div>${timelineFor(row.tokenId)}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div class="qr-box" id="lookupQr"></div><span class="muted" style="font-size:11.5px">查詢 QR（非驗真用）</span><button class="btn small" type="button" data-action="verify-this" data-id="${row.tokenId}">${icon("nfc")}感應此瓶標籤</button></div>
+    </div>
+  </div>`;
+  const prevRedeem = $("#redeemPanel")?.innerHTML;
+  openDialog(html, "bottle");
+  if (refresh && prevRedeem) $("#redeemPanel").innerHTML = prevRedeem;
+  try { if (window.QRCode) new QRCode($("#lookupQr"), { text: lookup, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.M }); } catch { /* QR 產生失敗時略過 */ }
+}
+function redeemForm(id) {
+  $("#redeemPanel").innerHTML = `<div class="card card-pad" style="display:flex;flex-direction:column;gap:10px">
+    <div class="label">實體提領申請</div>
+    <p class="muted" style="margin:0;font-size:12.5px">收件資料只在您的瀏覽器計算雜湊（deliveryRef）後上鏈，明文不會上鏈；正式營運時應經加密通道交給倉儲方。依菸酒管理法，取貨或簽收時須出示證件確認已滿 18 歲。</p>
+    <div class="form"><div class="field"><label for="rdMethod">取貨方式</label><select id="rdMethod"><option>金門恆溫倉現場取貨（出示證件）</option><option>宅配（簽收時當面核對年齡）</option></select></div>
+    <div class="field"><label for="rdName">收件人姓名</label><input id="rdName" autocomplete="name"></div><div class="field"><label for="rdPhone">聯絡電話</label><input id="rdPhone" autocomplete="tel"></div>
+    <div class="field full"><label for="rdAddr">收件地址（現場取貨可留空）</label><input id="rdAddr" autocomplete="street-address"></div></div>
+    <label class="check"><input id="rdAge" type="checkbox"> 我已年滿 18 歲，並同意於取貨或簽收時出示身分證件</label>
+    <div class="actions"><button class="btn primary" type="button" data-action="redeem-submit" data-id="${id}">送出提領申請（NFT 將鎖定）</button></div></div>`;
+}
+
+/* ════════════════════════ 交易動作 ════════════════════════ */
+async function act(label, fn) {
+  if (app.busy) return;
+  app.busy = true;
+  try {
+    const rc = await fn();
+    const hash = rc?.hash ?? rc?.transactionHash;
+    const url = hash && app.chain.explorerTx?.(hash);
+    toast(`${esc(label)}完成${url ? `：<a href="${url}" target="_blank" rel="noopener">在區塊瀏覽器查看</a>` : ""}`, "ok");
+    await refresh();
+    return true;
+  } catch (e) { toast(`${esc(label)}失敗：${esc(explain(e))}`, "err", 8000); console.warn(e); return false; }
+  finally { app.busy = false; }
+}
+const num = (sel) => { const v = Number($(sel)?.value); return Number.isFinite(v) && v > 0 ? v : null; };
+/** 金額原字串（保留小數精度，鏈上模式以 parseEther 轉換） */
+const amt = (sel) => { const raw = ($(sel)?.value ?? "").trim(); return raw && Number(raw) > 0 ? raw : null; };
+function needMe() { if (!app.snap?.me) { toast("請先連接錢包或選擇身分", "warn"); return false; } return true; }
+async function handleAction(btn) {
+  const a = btn.dataset.action, id = Number(btn.dataset.id), c = app.chain;
+  switch (a) {
+    case "close": return closeDialog();
+    case "open-bank": return switchView("bank");
+    case "connect-wallet": return connectWallet();
+    case "bank-deposit": { if (!needMe()) return; const v = amt("#depAmount"); if (!v) return toast("請輸入存款金額", "warn"); if (await act("存款（入金）", () => c.deposit(v))) $("#depAmount").value = ""; return; }
+    case "bank-withdraw": { if (!needMe()) return; const v = amt("#wdAmount"); if (!v) return toast("請輸入提款金額", "warn"); if (await act("提款", () => c.withdraw(v))) $("#wdAmount").value = ""; return; }
+    case "bank-transfer": {
+      if (!needMe()) return;
+      const to = $("#tfTo").value.trim(), v = amt("#tfAmount");
+      if (!ethers.isAddress(to)) return toast("請輸入正確的收款地址（0x 開頭 42 字元）", "warn");
+      if (!v) return toast("請輸入轉帳金額", "warn");
+      return confirmBox(`確認從平台帳戶轉帳 <b>${kb(Number(v))}</b> 給 <span class="mono">${esc(short(to))}</span>？轉帳後無法撤回。`, async () => { if (await act("內部轉帳", () => c.transfer(to, v))) { $("#tfTo").value = ""; $("#tfAmount").value = ""; } });
+    }
+    case "dep-max": if (app.snap?.me) $("#depAmount").value = app.snap.me.kbMax; return;
+    case "wd-max": if (app.snap?.me) $("#wdAmount").value = app.snap.me.bankMax; return;
+    case "scan-recipient": return openAddressScanner();
+    case "copy-address": return copyText(app.snap?.me?.address);
+    case "toggle-bank-pause": return act(app.snap.bank.paused ? "恢復平台帳戶" : "暫停平台帳戶", () => c.bankPause(!app.snap.bank.paused));
+    case "blacklist": { const addr = $("#blAddr").value.trim(); if (!ethers.isAddress(addr)) return toast("請輸入正確的錢包地址", "warn"); return act(btn.dataset.value === "1" ? "列入黑名單" : "解除黑名單", () => c.setBlacklist(addr, btn.dataset.value === "1")); }
+    case "open-wallet-qr": return openWalletQr();
+    case "open-settings": return openSettings();
+    case "demo-ff": c.fastForward?.(86400); toast("展示時鐘已前進 1 天，可試著結算競標或觀察出價逾期", "ok"); return refresh();
+    case "demo-reset": await c.reset?.(); toast("展示資料已重設", "ok"); return refresh();
+    case "claim": return act("領取測試幣", () => c.claim());
+    case "list": { if (!needMe()) return; const v = num("#listPrice"); if (!v) return toast("請輸入直購價", "warn"); return act("上架直購", () => c.list(id, v)); }
+    case "update-price": { const v = num("#newPrice"); if (!v) return toast("請輸入新售價", "warn"); return act("調整售價", () => c.updatePrice(id, v)); }
+    case "cancel-listing": return act("撤下掛單", () => c.cancelListing(id));
+    case "buy": { if (!needMe()) return; const l = app.snap.listings.find((x) => x.id === id), bal = app.snap.me.bank; return confirmBox(`確認以 <b>${kb(l.price)}</b> 直購此瓶？將從平台帳戶扣款（目前可用 ${kb(bal)}${bal < l.price ? "，不足部分會先從錢包入金" : ""}），成交後產權 NFT 立即轉入您的錢包。`, () => act("直購", () => c.buy(id, l.price, l))); }
+    case "create-auction": { const v = num("#auctionReserve"); if (!v) return toast("請輸入競標底價", "warn"); return act("發起競標", () => c.createAuction(id, v, Number($("#auctionDuration").value))); }
+    case "bid": { if (!needMe()) return; const v = num("#bidAmount"); if (!v) return toast("請輸入出價金額", "warn"); const au = app.snap.auctions.find((x) => x.id === id); const min = au ? c.minNextBid(au) : 0; if (v < min) return toast(`出價至少需 ${kb(min)}`, "warn"); return act("競標出價", () => c.bid(id, v)); }
+    case "settle": return act("結算競標", () => c.settleAuction(id));
+    case "cancel-auction": return act("取消競標", () => c.cancelAuction(id));
+    case "make-offer": { if (!needMe()) return; const v = num("#offerAmount"); if (!v) return toast("請輸入出價金額", "warn"); return act("出價收購", () => c.makeOffer(id, v, Number($("#offerDuration").value))); }
+    case "cancel-offer": return act("撤回出價", () => c.cancelOffer(id));
+    case "accept-offer": { const o = app.snap.offers.find((x) => x.id === id); const inEscrow = app.snap.listings.some((l) => l.active && l.tokenId === o.tokenId); return confirmBox(`確認接受 <b>${kb(o.amount)}</b> 的收購出價？手續費 ${(app.snap.stats.feeBps / 100).toFixed(1)}% 由您負擔。`, () => act("接受出價", () => c.acceptOffer(id, inEscrow))); }
+    case "redeem-form": return redeemForm(id);
+    case "redeem-submit": {
+      if (!$("#rdAge").checked) return toast("請先確認年滿 18 歲並同意出示證件", "warn");
+      const payload = { method: $("#rdMethod").value, name: $("#rdName").value.trim(), phone: $("#rdPhone").value.trim(), addr: $("#rdAddr").value.trim(), nonce: crypto.getRandomValues(new Uint32Array(2)).join("-") };
+      if (!payload.name || !payload.phone) return toast("請填寫收件人姓名與電話", "warn");
+      const ref = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(payload)));
+      return act("申請實體提領", () => c.requestRedemption(id, ref));
+    }
+    case "cancel-redeem": return act("撤回提領申請", () => c.cancelRedemption(id));
+    case "approve-redeem": return confirmBox(`核准 #${id} 出庫？此操作會銷毀產權 NFT（Burn），無法復原。`, () => act("核准出庫", () => c.approveRedemption(id)));
+    case "reject-redeem": return act("駁回提領", () => c.rejectRedemption(id, "倉儲審核未通過，請補正收件或年齡驗證資料"));
+    case "unfreeze": return act("解除凍結", () => c.setFrozen(id, false, "倉儲實地檢查完成"));
+    case "toggle-pause": return act(app.snap.stats.paused ? "恢復營運" : "緊急暫停", () => c.pause(!app.snap.stats.paused));
+    case "withdraw-fees": return act("提領手續費", () => c.withdrawFees());
+    case "toggle-compliance": return act("切換合規模式", () => c.setComplianceRequired(!app.snap.complianceRequired));
+    case "age-verify": { const addr = $("#ageAddr").value.trim(); if (!ethers.isAddress(addr)) return toast("請輸入正確的錢包地址", "warn"); return act(btn.dataset.value === "1" ? "標記年齡驗證" : "撤銷年齡驗證", () => c.setAgeVerified(addr, btn.dataset.value === "1")); }
+    case "nfc-scan": return startNfc();
+    case "qr-camera": return startCamera();
+    case "stop-camera": return stopCamera();
+    case "verify-text": return handleSunInput($("#sunInput").value);
+    case "verify-nxp": $("#sunInput").value = NXP_SAMPLE; return handleSunInput(NXP_SAMPLE, zeroKeys);
+    case "simulate-tap": return simulateTap();
+    case "replay-last": if (!app.lastSun) return toast("請先模擬感應一次", "warn"); return handleSunInput(app.lastSun);
+    case "record-verification": return act("寫入鏈上驗證紀錄", () => c.verifyAndRecord(app.lastResult));
+    case "verify-this": closeDialog(); switchView("verify"); $("#simBottle").value = String(id); return toast("請感應瓶身標籤；展示環境可按「模擬感應一次」", "info");
+    case "mint-new-tag": return mintNewTag();
+    case "reader-connect": return readerConnect(true);
+    case "reader-toggle": return readerToggle();
+    case "mint-submit": return mintSubmit();
+    case "save-settings": return saveSettings();
+    case "clear-settings": store.del("kinmen-rwa-settings-v1"); location.reload(); return;
+  }
+}
+function confirmBox(msg, onOk) {
+  openDialog(`<div class="dialog-head"><h2 id="dialogTitle">請確認</h2><button class="btn ghost close" type="button" data-action="close" aria-label="關閉">${icon("x")}</button></div><div class="dialog-body"><p style="margin:0">${msg}</p><div class="actions"><button class="btn primary" type="button" id="confirmOk">確認</button><button class="btn" type="button" data-action="close">取消</button></div></div>`, "confirm", true);
+  $("#confirmOk").addEventListener("click", () => { closeDialog(); onOk(); }, { once: true });
+}
+function copyText(t) {
+  if (!t) return toast("請先連接錢包或選擇身分", "warn");
+  navigator.clipboard?.writeText(t).then(() => toast("已複製地址", "ok")).catch(() => toast("無法存取剪貼簿，請手動選取地址", "warn"));
+}
+async function connectWallet() {
+  try { await app.chain.connectInjected(); await refresh(); toast("錢包已連接", "ok"); }
+  catch (e) { toast(esc(explain(e)), "err", 8000); }
+}
+/** 掃描對方的收款碼，把錢包地址帶入「內部轉帳」（對應 NquBank 範例的掃描收款地址） */
+function openAddressScanner() {
+  openDialog(`<div class="dialog-head"><h2 id="dialogTitle">掃描收款地址</h2><button class="btn ghost close" type="button" data-action="close" aria-label="關閉">${icon("x")}</button></div>
+  <div class="dialog-body"><video id="addrVideo" class="scan" playsinline muted></video>
+  <p class="muted" style="margin:0;font-size:12.5px">請把對方「我的收款碼」對準鏡頭。相機無法使用時，可改選含 QR 碼的照片。</p>
+  <label class="btn small" for="addrFile" style="align-self:flex-start">${icon("upload")}選擇 QR 照片</label><input id="addrFile" type="file" accept="image/*" hidden></div>`, "scanner", true);
+  const fill = (text) => {
+    const m = /(0x[0-9a-fA-F]{40})/.exec(text ?? "");
+    if (!m) return toast("這個 QR 碼不是錢包地址", "warn");
+    closeDialog(); switchView("bank");
+    $("#tfTo").value = ethers.getAddress(m[1]);
+    toast(`已帶入收款地址 ${esc(short(m[1]))}`, "ok");
+  };
+  $("#addrFile").addEventListener("change", (ev) => { const f = ev.target.files?.[0]; if (f) decodeQrFile(f, fill); ev.target.value = ""; });
+  startScanLoop($("#addrVideo"), fill)
+    .then((cam) => { if ($("#overlay").hidden || $("#dialog").dataset.kind !== "scanner") stopCam(cam); else app.addrCamera = cam; })
+    .catch(() => toast("無法使用相機（可能未授權或在內嵌頁面中），請改選 QR 照片", "warn", 8000));
+}
+function openWalletQr() {
+  const me = app.snap.me;
+  if (!me) return toast("請先連接錢包或選擇身分", "warn");
+  openDialog(`<div class="dialog-head"><h2 id="dialogTitle">我的收款碼</h2><button class="btn ghost close" type="button" data-action="close" aria-label="關閉">${icon("x")}</button></div><div class="dialog-body" style="align-items:center"><div class="qr-box" id="walletQr"></div><p class="mono" style="margin:0;word-break:break-all;text-align:center">${esc(me.address)}</p><button class="btn small" type="button" id="copyAddr">複製地址</button></div>`, "wallet", true);
+  try { new QRCode($("#walletQr"), { text: me.address, width: 168, height: 168, correctLevel: QRCode.CorrectLevel.H }); } catch { /* 略過 */ }
+  $("#copyAddr").addEventListener("click", () => navigator.clipboard?.writeText(me.address).then(() => toast("已複製", "ok")).catch(() => toast("無法存取剪貼簿，請手動選取地址", "warn")));
+}
+function openSettings() {
+  const s = settings(), cid = s.chainId ?? CONFIG.defaultChainId, d = currentDeployment(cid) ?? {};
+  openDialog(`<div class="dialog-head"><h2 id="dialogTitle">網路與合約設定</h2><button class="btn ghost close" type="button" data-action="close" aria-label="關閉">${icon("x")}</button></div>
+  <div class="dialog-body"><p class="muted" style="margin:0;font-size:12.5px">部署後執行 <span class="mono">npx hardhat run scripts/deploy.ts --network sepolia</span>，再把輸出的地址填入此處（只存在本機瀏覽器），或重新產生網頁檔。</p>
+  <div class="form"><div class="field full"><label for="setChain">網路</label><select id="setChain">${Object.entries(CONFIG.networks).map(([k, n]) => `<option value="${k}" ${Number(k) === Number(cid) ? "selected" : ""}>${esc(n.name)}（${k}）</option>`).join("")}</select></div>
+  <div class="field full"><label for="setKb">KBCoin 地址</label><input id="setKb" class="mono" value="${esc(d.kb ?? "")}"></div><div class="field full"><label for="setRwa">KinmenLiquorRWA 地址</label><input id="setRwa" class="mono" value="${esc(d.rwa ?? "")}"></div>
+  <div class="field full"><label for="setBank">KinmenBank（平台帳戶）地址</label><input id="setBank" class="mono" value="${esc(d.bank ?? "")}"></div>
+  <div class="field full"><label for="setMarket">KinmenMarketplace 地址</label><input id="setMarket" class="mono" value="${esc(d.market ?? "")}"></div><div class="field"><label for="setBlock">部署區塊</label><input id="setBlock" type="number" min="0" value="${esc(d.deployBlock ?? 0)}"></div>
+  <div class="field"><label for="setVerifier">驗證服務網址</label><input id="setVerifier" class="mono" placeholder="https://…" value="${esc(s.verifierUrl ?? CONFIG.verifierUrl)}"></div></div>
+  <div class="actions"><button class="btn primary" type="button" data-action="save-settings">儲存並重新連線</button><button class="btn" type="button" data-action="clear-settings">清除自訂設定</button></div></div>`, "settings");
+}
+function saveSettings() {
+  const cid = Number($("#setChain").value), s = settings();
+  s.chainId = cid; s.verifierUrl = $("#setVerifier").value.trim().replace(/\/$/, "");
+  s.overrides = s.overrides ?? {};
+  const kbA = $("#setKb").value.trim(), rwaA = $("#setRwa").value.trim(), bkA = $("#setBank").value.trim(), mkA = $("#setMarket").value.trim();
+  if (kbA || rwaA || bkA || mkA) {
+    if (![kbA, rwaA, bkA, mkA].every((x) => ethers.isAddress(x))) return toast("四個合約地址都要填寫，且格式需正確", "err");
+    s.overrides[cid] = { kb: kbA, rwa: rwaA, bank: bkA, market: mkA, deployBlock: Number($("#setBlock").value) || 0 };
+  } else delete s.overrides[cid];
+  store.set("kinmen-rwa-settings-v1", s);
+  location.reload();
+}
+
+/* ════════════════════════ NFC／QR／SUN 驗證流程 ════════════════════════ */
+async function startNfc() {
+  if (!("NDEFReader" in window)) return toast("此瀏覽器不支援 Web NFC（需 Android 版 Chrome 並以 HTTPS 開啟，且不能在內嵌頁面中）。iPhone 請直接以手機靠近標籤開啟網址，或改用 QR 掃描。", "warn", 9000);
+  try {
+    const reader = new NDEFReader(), ctl = new AbortController();
+    await reader.scan({ signal: ctl.signal });
+    const t = toast("請將手機背面靠近瓶身標籤…", "info", 30000);
+    reader.onreadingerror = () => toast("讀取失敗，請將標籤貼近手機再試一次", "warn");
+    reader.onreading = ({ message }) => {
+      for (const rec of message.records) {
+        if (rec.recordType === "url" || rec.recordType === "absolute-url") { ctl.abort(); t.remove(); handleSunInput(new TextDecoder().decode(rec.data)); return; }
+      }
+      toast("此標籤沒有網址紀錄", "warn");
+    };
+  } catch (e) { toast(`無法啟動 NFC：${esc(e.message)}`, "err"); }
+}
+/** 開啟後鏡頭並每 300 毫秒辨識一次 QR（優先用 BarcodeDetector，否則用 jsQR） */
+async function startScanLoop(video, onText) {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("no camera");
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  video.srcObject = stream; await video.play();
+  const detector = "BarcodeDetector" in window ? new BarcodeDetector({ formats: ["qr_code"] }) : null;
+  const canvas = document.createElement("canvas"), ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const cam = { stream, timer: null };
+  cam.timer = setInterval(async () => {
+    if (video.readyState < 2) return;
+    let text = null;
+    try {
+      if (detector) text = (await detector.detect(video))[0]?.rawValue ?? null;
+      else if (window.jsQR) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; ctx.drawImage(video, 0, 0); const img = ctx.getImageData(0, 0, canvas.width, canvas.height); text = jsQR(img.data, img.width, img.height)?.data ?? null; }
+    } catch { text = null; }
+    if (text) { stopCam(cam); onText(text); }
+  }, 300);
+  return cam;
+}
+function stopCam(cam) { if (!cam) return; clearInterval(cam.timer); cam.stream.getTracks().forEach((t) => t.stop()); }
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) return toast("此環境無法使用相機，請改用「上傳 QR 照片」", "warn");
+  try {
+    $("#cameraBox").hidden = false;
+    app.camera = await startScanLoop($("#cameraVideo"), (text) => { stopCamera(); handleScanText(text); });
+  } catch (e) { $("#cameraBox").hidden = true; toast("無法使用相機（可能未授權或在內嵌頁面中），請改用「上傳 QR 照片」", "warn", 8000); }
+}
+function stopCamera() { stopCam(app.camera); app.camera = null; $("#cameraBox").hidden = true; }
+function decodeQrFile(file, onText = handleScanText) {
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const c = document.createElement("canvas"), scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0, c.width, c.height);
+    const data = ctx.getImageData(0, 0, c.width, c.height);
+    const res = window.jsQR ? jsQR(data.data, data.width, data.height) : null;
+    URL.revokeObjectURL(url);
+    if (res?.data) onText(res.data); else toast("照片中找不到 QR 碼，請拍清楚一點再試", "warn");
+  };
+  img.onerror = () => toast("無法讀取這張圖片", "err");
+  img.src = url;
+}
+function handleScanText(text) {
+  if (/[?&](picc_data|e)=/i.test(text)) { switchView("verify"); $("#sunInput").value = text; return handleSunInput(text); }
+  const m = /[?&]token=(\d+)/.exec(text);
+  if (m) return openBottle(Number(m[1]));
+  if (ethers.isAddress(text.trim())) { $("#ageAddr").value = text.trim(); return toast(`掃描到錢包地址 ${esc(short(text.trim()))}`, "info"); }
+  toast(`無法辨識的 QR 內容：${esc(text.slice(0, 80))}`, "warn");
+}
+async function simulateTap() {
+  if (!Sun.available) return toast("此瀏覽器不支援 WebCrypto，無法模擬", "err");
+  const id = Number($("#simBottle").value);
+  const b = app.snap.bottles.find((x) => x.tokenId === id);
+  if (!b) return toast("請先選擇一瓶", "warn");
+  const tagNo = await tagNumberOf(b);
+  if (!tagNo) return toast("此瓶不是以內建展示標籤製作（例如以實體卡入庫），請改用 USB 讀卡機感應該張卡", "warn");
+  const key = `kinmen-rwa-tag-${app.chain.kind}-${tagNo}`;
+  const next = Math.max(store.get(key, 0), b.lastSunCounter) + 1;
+  store.set(key, next);
+  const q = await Sun.simulate(demoUid(tagNo), next, demoKeys, $("#simTamper").value);
+  const url = `${pageBase()}?${q}`;
+  app.lastSun = url;
+  $("#sunInput").value = url;
+  return handleSunInput(url);
+}
+async function tagNumberOf(b) {
+  for (let n = 1; n <= 64; n++) if ((await Sun.uidHash(demoUid(n), DEMO_KEYS.salt)) === b.uidHash) return n;
+  return 0;
+}
+async function handleSunInput(text, keys = demoKeys) {
+  switchView("verify");
+  const box = $("#verifyResult");
+  box.innerHTML = `<p class="muted" style="margin:0">驗證中…</p>`;
+  try {
+    const remote = settings().verifierUrl && app.chain.kind === "evm" && keys === demoKeys;
+    if (remote) return renderRemoteResult(text);
+    const pre = await Sun.verify(text, keys);
+    let uidHash = null, tokenId = 0, last = -1;
+    if (pre.decryptOk) {
+      uidHash = await Sun.uidHash(pre.uid, DEMO_KEYS.salt);
+      tokenId = keys === demoKeys ? await Promise.resolve(app.chain.tokenByUidHash(uidHash)) : 0;
+      last = tokenId ? (app.chain.kind === "demo" ? app.chain.lastAcceptedCounter(uidHash) : await app.chain.lastAcceptedCounterAsync(uidHash)) : -1;
+    }
+    const svcKey = `kinmen-rwa-svc-counters-${app.chain.kind}`, svc = store.get(svcKey, {});
+    if (uidHash && keys === demoKeys) last = Math.max(last, svc[uidHash] ?? -1);
+    const r = pre.decryptOk ? await Sun.verify(text, keys, last) : pre;
+    if (r.decryptOk && r.macOk && r.fresh && keys === demoKeys) { svc[uidHash] = r.counter; store.set(svcKey, svc); }
+    app.lastResult = { ...r, uidHash, tokenId };
+    renderLocalResult(app.lastResult, keys === zeroKeys);
+  } catch (e) { box.innerHTML = `<div class="verdict bad">${icon("x")}<div><b>無法驗證</b><div>${esc(e.message)}</div></div></div>`; }
+}
+function renderLocalResult(r, isNxp) {
+  const step = (ok, title, detail) => `<li class="${ok === null ? "" : ok ? "ok" : "bad"}"><span class="step-dot">${ok === null ? "・" : ok ? "✓" : "✕"}</span><div><div>${title}</div>${detail ? `<div class="detail">${detail}</div>` : ""}</div></li>`;
+  const b = r.tokenId ? app.snap.bottles.find((x) => x.tokenId === r.tokenId) : null;
+  let verdict;
+  if (!r.decryptOk) verdict = ["bad", "偽造或非本平台標籤", "PICCData 無法以本平台金鑰解出正確格式"];
+  else if (!r.macOk) verdict = ["bad", "CMAC 不符：偽造或遭竄改", "網址中的任何位元被改動（包含拆封狀態）都會讓 CMAC 失效"];
+  else if (!r.fresh) verdict = ["warn", "疑似重放：此網址已被使用過", `計數器 ${r.counter} 未大於已接受的 ${r.lastCounter}，代表這是被複製的舊網址`];
+  else if (!r.intact) verdict = ["bad", "標籤回報已被拆封", "易碎迴路已斷開，倉儲方應立即凍結此瓶"];
+  else verdict = ["ok", isNxp ? "NXP 官方範例驗證通過" : "真品驗證通過", isNxp ? "以 AN12196 公開範例金鑰（全 0）驗證；證明本系統演算法與 NXP 規格一致" : "一次性 SUN 訊息、CMAC 與計數器皆正確"];
+  const steps = [
+    step(true, "解析 SUN 網址", `picc_data=${esc(r.parsed.picc)}${r.parsed.tt ? `　tt=${esc(r.parsed.tt)}` : ""}　cmac=${esc(r.parsed.mac)}`),
+    step(r.decryptOk, "以 K<sub>SDMMetaRead</sub> 解密 PICCData", r.decryptOk ? `Tag ${r.tag.toString(16).toUpperCase()}・UID ${esc(r.uidHex.slice(0, 4))}••••••${esc(r.uidHex.slice(-2))}・讀取計數器 ${r.counter}（${r.ctrHex}，LSB first）` : `解密結果 ${esc(r.plain)} 格式不符`),
+  ];
+  if (r.decryptOk) {
+    steps.push(step(true, "推導工作階段 MAC 金鑰", `SV2 = ${r.sv2}　K<sub>SesSDMFileReadMAC</sub> = CMAC(K<sub>SDMFileRead</sub>, SV2)`));
+    steps.push(step(r.macOk, "計算 CMAC 並截斷為 8 bytes（取奇數位元組）", `CMAC 輸入：「${esc(r.parsed.macInput || "（空字串）")}」　完整 ${r.macFull}<br>預期 ${r.expected}　標籤提供 ${esc(r.parsed.mac.toUpperCase())}`));
+    steps.push(step(isNxp ? null : r.fresh, "新鮮度檢查（防重放）", isNxp ? "官方範例無鏈上紀錄，略過" : `本次計數器 ${r.counter}　已接受 ${r.lastCounter < 0 ? "無" : r.lastCounter}`));
+    steps.push(step(r.tt ? r.intact : null, "易碎迴路狀態（NTAG 424 DNA TT）", r.tt ? `TT=${esc(r.tt)}（第一字為永久狀態、第二字為目前狀態；C 封閉、O 開啟）` : "此標籤未鏡像拆封狀態"));
+    steps.push(step(r.tokenId ? true : null, "對應鏈上產權", r.tokenId ? `uidHash ${short(r.uidHash)} → Token #${r.tokenId}` : `uidHash ${short(r.uidHash)}：未找到對應 Token`));
+  }
+  const canRecord = r.decryptOk && r.macOk && r.fresh && r.tokenId && (app.chain.kind === "demo" || app.chain.isLocal);
+  $("#verifyResult").innerHTML = `<div class="verdict ${verdict[0]}">${icon(verdict[0] === "ok" ? "check" : "alert")}<div><b>${verdict[1]}</b><div style="font-size:13px">${esc(verdict[2])}</div></div></div>
+    <ol class="steps" style="margin-top:12px">${steps.join("")}</ol>
+    ${b ? `<div class="trade-box" style="margin-top:12px"><div style="display:flex;gap:12px;align-items:center">${bottleSvg(b.meta?.attributes?.find((x) => x.trait_type === "系列")?.value ?? "", 48)}<div><b>${esc((b.meta?.name ?? b.product).replace(/\s#\d+$/, ""))}</b><div class="wine-meta">Token #${b.tokenId}・${esc(b.cellar)}</div></div></div>
+      <div class="actions"><button class="btn small" type="button" data-open="${b.tokenId}">查看此瓶</button>${canRecord ? `<button class="btn small primary" type="button" data-action="record-verification">寫入鏈上驗證紀錄（EIP-712 收據）</button>` : ""}</div>
+      ${canRecord ? `<span class="muted" style="font-size:12px">${app.chain.kind === "demo" ? "展示模式：模擬驗證服務簽章並呼叫 recordVerification" : "本機鏈：以測試帳號 #1（驗證服務）簽發收據，由目前帳號送出"}</span>` : ""}</div>` : ""}`;
+}
+async function renderRemoteResult(text) {
+  const box = $("#verifyResult");
+  const query = text.includes("?") ? text.slice(text.indexOf("?") + 1) : text;
+  const res = await fetch(`${settings().verifierUrl}/api/verify?${query}`);
+  const j = await res.json();
+  if (!res.ok) { box.innerHTML = `<div class="verdict bad">${icon("x")}<div><b>驗證服務回報錯誤</b><div>${esc(j.message ?? j.error)}</div></div></div>`; return; }
+  const tokenId = j.uidHash ? await app.chain.tokenByUidHash(j.uidHash) : 0;
+  app.lastResult = { ...j, tokenId, counter: j.counter, intact: j.intact };
+  const v = !j.macOk ? ["bad", "CMAC 不符：偽造或遭竄改"] : j.replayed ? ["warn", "疑似重放：此網址已被使用過"] : !j.intact ? ["bad", "標籤回報已被拆封"] : ["ok", "真品驗證通過（驗證服務）"];
+  box.innerHTML = `<div class="verdict ${v[0]}">${icon(v[0] === "ok" ? "check" : "alert")}<div><b>${v[1]}</b><div style="font-size:13px">計數器 ${j.counter}・已接受 ${j.lastAcceptedCounter}・${esc(j.uidMasked ?? "")}</div></div></div>
+  ${tokenId ? `<div class="actions" style="margin-top:12px"><button class="btn small" type="button" data-open="${tokenId}">查看 Token #${tokenId}</button></div>` : `<p class="muted">未找到對應 Token</p>`}`;
+}
+async function mintNewTag() {
+  const used = new Set(await Promise.all(app.snap.bottles.map((b) => b.uidHash)));
+  for (let n = 1; n <= 64; n++) {
+    const h = await Sun.uidHash(demoUid(n), DEMO_KEYS.salt);
+    if (!used.has(h)) { const q = await Sun.simulate(demoUid(n), 1, demoKeys, "CC"); store.set(`kinmen-rwa-tag-${app.chain.kind}-${n}`, 1); $("#mintSun").value = q; return toast(`已模擬一枚新標籤（展示 UID 尾碼 ${n.toString(16).padStart(2, "0").toUpperCase()}）`, "ok"); }
+  }
+  toast("展示標籤已用完", "warn");
+}
+async function mintSubmit() {
+  if (!needMe()) return;
+  const to = $("#mintTo").value.trim();
+  if (!ethers.isAddress(to)) return toast("受託人地址格式不正確", "warn");
+  const name = $("#mintName").value.trim(), vintage = Number($("#mintVintage").value), volume = $("#mintVolume").value.trim(), abv = $("#mintAbv").value.trim(), category = $("#mintCategory").value, cellar = $("#mintCellar").value.trim();
+  if (!name || !cellar || !(vintage >= 1950 && vintage <= 2100)) return toast("請填寫酒款、倉位與 1950–2100 之間的年份", "warn");
+  const sunUrl = $("#mintSun").value.trim();
+  if (!sunUrl) return toast("請先感應標籤或按「模擬一枚新標籤」", "warn");
+  const meta = { name, description: "國立金門大學資訊工程學系專題之測試網資產。", attributes: [{ trait_type: "系列", value: category }, { trait_type: "年份", value: vintage }, { trait_type: "容量", value: volume }, { trait_type: "酒精濃度", value: abv }] };
+  const uri = $("#mintUri").value.trim() || "data:application/json;base64," + btoa(String.fromCharCode(...utf8(JSON.stringify(meta))));
+  const form = { to, name, vintage, product: `${name}｜${volume}｜${abv}`, cellar, uri, meta, sunUrl };
+  return act("入庫鑄造", async () => {
+    const useRemote = app.chain.kind === "evm" && (settings().verifierUrl || !app.chain.isLocal);
+    let sun = null;
+    if (!useRemote) {
+      const r = await Sun.verify(sunUrl, demoKeys);
+      if (!r.decryptOk || !r.macOk) throw new Error("SUN 驗證失敗，拒絕鑄造");
+      if (!r.intact) throw new Error("標籤回報已拆封，拒絕入庫");
+      sun = { ...r, uidHash: await Sun.uidHash(r.uid, DEMO_KEYS.salt) };
+    }
+    return app.chain.mint(form, sun, $("#mintApiKey")?.value);
+  });
+}
+
+/* ════════════════════════ USB 讀卡機（荣士 IC-02，WebHID） ════════════════════════
+ * 自訂 HID 裝置（VID 0x0801、PID 0x2011），輸入與輸出報告各 64 bytes、不使用 report ID。
+ * 原廠協定（https://www.icmcu.com/news_s.asp?ID=523）：送出 78 68 01 F0（尋卡並讀卡號），
+ * 回應 78 68 ?? F0 狀態 UID0..UID3；狀態 00 成功、08 無卡、09 感應區有多張卡。
+ * 讀卡機不會主動送資料，所以每 300 毫秒詢問一次；連續兩次無卡才算卡片拿開。
+ * 一般 13.56 MHz 卡片沒有 SUN 功能：展示時以卡號推導 7 bytes 的展示 UID，
+ * 再以展示金鑰在瀏覽器產生 SUN，等於把實體卡當作 NTAG 424 DNA 標籤的替身；
+ * 計數器記在瀏覽器，正式環境仍須使用 NTAG 424 DNA 標籤與手機感應。 */
+const IcReader = (() => {
+  const FILTER = { vendorId: 0x0801, productId: 0x2011 };
+  const REQ = new Uint8Array(64); REQ.set([0x78, 0x68, 0x01, 0xf0]);
+  let dev = null, timer = null, waiting = null, present = null, missed = 0, onCard = null, onState = null;
+  const supported = () => typeof navigator !== "undefined" && "hid" in navigator;
+  const isIc02 = (d) => d.vendorId === FILTER.vendorId && d.productId === FILTER.productId;
+  function handleReport(ev) {
+    const r = new Uint8Array(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
+    if (r[0] !== 0x78 || r[1] !== 0x68 || r[3] !== 0xf0) return;
+    const w = waiting; waiting = null; w?.(r);
+  }
+  async function poll() {
+    if (!dev?.opened || waiting) return;
+    const reply = new Promise((res) => { waiting = res; setTimeout(() => { if (waiting === res) { waiting = null; res(null); } }, 600); });
+    try { await dev.sendReport(0, REQ); } catch { waiting = null; return; }
+    const r = await reply;
+    if (!r) return;
+    if (r[4] === 0x00) {
+      const uid = r.slice(5, 9), hex = bytesToHex(uid);
+      missed = 0;
+      if (hex !== present) { present = hex; try { await onCard?.(uid, hex); } catch (e) { console.warn(e); } }
+    } else if (++missed >= 2) present = null;
+  }
+  async function attach(d) {
+    if (dev === d && d.opened) return;
+    if (!d.opened) await d.open();   // 先打開成功才記住裝置，失敗時下次插上仍可自動重連
+    dev = d;
+    dev.addEventListener("inputreport", handleReport);
+    clearInterval(timer); timer = setInterval(poll, 300);
+    onState?.(true, dev.productName);
+  }
+  function detach() { clearInterval(timer); timer = null; dev?.removeEventListener("inputreport", handleReport); dev = null; present = null; waiting = null; onState?.(false); }
+  async function connect() {
+    const [d] = await navigator.hid.requestDevice({ filters: [FILTER] });
+    if (!d) return false;
+    await attach(d); return true;
+  }
+  async function restore() {
+    if (!supported()) return;
+    try { const d = (await navigator.hid.getDevices()).find(isIc02); if (d) await attach(d); } catch (e) { console.info("讀卡機自動連接失敗：", e?.message ?? e); }
+  }
+  async function disconnect() { const d = dev; detach(); try { await d?.close(); } catch { /* 已拔除 */ } }
+  if (supported()) {
+    navigator.hid.addEventListener("disconnect", (ev) => { if (ev.device === dev) { detach(); toast("讀卡機已拔除", "warn"); } });
+    navigator.hid.addEventListener("connect", (ev) => { if (!dev && isIc02(ev.device)) attach(ev.device).then(() => toast("讀卡機已重新連接", "ok")).catch(() => {}); });
+  }
+  return { supported, connect, restore, disconnect, get connected() { return !!dev?.opened; }, set onCard(f) { onCard = f; }, set onState(f) { onState = f; } };
+})();
+/** 卡號（4 bytes）補成 7 bytes 展示 UID：0x08 + 卡號 + "IC"，不會與內建展示標籤（0x04 開頭）重疊 */
+const cardTagUid = (uid4) => Uint8Array.of(0x08, ...uid4, 0x49, 0x43);
+async function cardInfo(uid4) {
+  const uidHash = await Sun.uidHash(cardTagUid(uid4), DEMO_KEYS.salt);
+  const tokenId = await Promise.resolve(app.chain.tokenByUidHash(uidHash));
+  return { uidHash, tokenId };
+}
+/** 讓卡片「感應一次」：計數器取（瀏覽器紀錄、鏈上已接受、驗證端已接受）的最大值再加一 */
+async function cardTap(uid4, info, tt = "CC") {
+  const onChain = info.tokenId ? (app.chain.kind === "demo" ? app.chain.lastAcceptedCounter(info.uidHash) : await app.chain.lastAcceptedCounterAsync(info.uidHash)) : 0;
+  const svc = store.get(`kinmen-rwa-svc-counters-${app.chain.kind}`, {})[info.uidHash] ?? 0;
+  const key = `kinmen-rwa-card-${app.chain.kind}-${bytesToHex(uid4)}`;
+  const next = Math.max(store.get(key, 0), onChain, svc) + 1;
+  store.set(key, next);
+  return Sun.simulate(cardTagUid(uid4), next, demoKeys, tt);
+}
+async function onCardTap(uid4, hex) {
+  if (!app.snap || !Sun.available) return;
+  const tag = `卡號 <b class="mono">${hex}</b>`;
+  try {
+    const info = await cardInfo(uid4);
+    if (app.view === "admin") {
+      if (info.tokenId) return toast(`${tag} 已綁定 Token #${info.tokenId}，同一張卡不可重複入庫`, "warn", 7000);
+      $("#mintSun").value = await cardTap(uid4, info, "CC");
+      $("#mintSun").scrollIntoView({ block: "center", behavior: "smooth" });
+      return toast(`${tag} 已產生入庫 SUN，確認資料後按「驗證標籤並鑄造」`, "ok");
+    }
+    if (app.view === "verify") {
+      const url = `${pageBase()}?${await cardTap(uid4, info, $("#simTamper").value)}`;
+      app.lastSun = url; $("#sunInput").value = url;
+      return handleSunInput(url);
+    }
+    if (info.tokenId) { toast(`${tag} → Token #${info.tokenId}`, "ok"); return openBottle(info.tokenId); }
+    toast(`${tag} 尚未綁定任何一瓶。到「營運後台」感應可入庫綁定，到「NFC 驗真」感應可跑完整驗證。`, "info", 8000);
+  } catch (e) { toast(`讀卡處理失敗：${esc(explain(e))}`, "err", 8000); }
+}
+async function readerConnect(hintIfOn = false) {
+  if (IcReader.connected) { if (hintIfOn) toast("讀卡機已連接，請把卡片平放在感應區", "info"); return; }
+  if (!IcReader.supported()) return toast("此瀏覽器不支援 WebHID，請用電腦版 Chrome 或 Edge 開啟（Safari、Firefox 與手機不支援）", "warn", 8000);
+  try { if (await IcReader.connect()) toast("讀卡機已連接，把卡片放上感應區即可", "ok"); }
+  catch (e) {
+    const msg = e?.name === "SecurityError" ? "此頁面不允許使用 WebHID（內嵌頁面常見），請以 Chrome 直接開啟網頁"
+      : e?.name === "InvalidStateError" || /open/i.test(e?.message ?? "") ? "讀卡機已配對但無法開啟：可能被其他程式佔用（例如終端機裡的讀卡程式），請先關閉它、拔插讀卡機後重新整理再試"
+      : `無法連接讀卡機：${esc(e?.message ?? e)}`;
+    console.warn("讀卡機連接失敗：", e);
+    toast(`${msg}（${esc(e?.name ?? "Error")}）`, "err", 10000);
+  }
+}
+async function readerToggle() {
+  if (!IcReader.connected) return readerConnect();
+  await IcReader.disconnect(); toast("已中斷讀卡機", "info");
+}
+function renderReaderState(on, name) {
+  $("#readerChip").classList.toggle("on", on);
+  $("#readerText").textContent = on ? `讀卡機 ${name || "IC-02"}` : "讀卡機未連接";
+  $("#readerMethodHint").textContent = on ? "已連接：把卡片平放在感應區就會驗證；拿開再放一次即為下一次感應。" : "電腦版 Chrome／Edge。連接後把卡片放上感應區，就以卡號產生一次 SUN 並驗證（展示金鑰，封條狀態依下方選項）。";
+}
+
+/* ════════════════════════ 導覽與啟動 ════════════════════════ */
+const VIEWS = ["market", "vault", "bank", "registry", "verify", "admin"];
+function switchView(v) {
+  app.view = v;
+  for (const p of $$("[data-viewpanel]")) p.hidden = p.dataset.viewpanel !== v;
+  for (const b of $$("[data-view]")) { if (b.matches(".rail button, .tabbar button")) b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"); }
+  try { if (location.hash !== `#${v}`) history.replaceState(null, "", `#${v}`); } catch { /* 部分內嵌環境不允許 */ }
+  render();
+}
+let refreshing = null;
+async function refresh() {
+  if (refreshing) return refreshing;
+  refreshing = (async () => {
+    try { if (app.chain.kind === "evm") await app.chain.syncLogs(); app.snap = await app.chain.snapshot(); render(); }
+    catch (e) { console.warn(e); toast(`讀取鏈上資料失敗：${esc(e.shortMessage ?? e.message)}`, "err"); }
+    finally { refreshing = null; }
+  })();
+  return refreshing;
+}
+function bindEvents() {
+  document.addEventListener("click", (ev) => {
+    const t = ev.target;
+    const viewBtn = t.closest("[data-view]"); if (viewBtn) { ev.preventDefault(); return switchView(viewBtn.dataset.view); }
+    const cat = t.closest("[data-cat]"); if (cat) { app.category = cat.dataset.cat; if (app.view !== "market") switchView("market"); else render(); return; }
+    const actBtn = t.closest("[data-action]"); if (actBtn && !actBtn.disabled) return handleAction(actBtn);
+    const open = t.closest("[data-open]"); if (open) return openBottle(Number(open.dataset.open));
+    const row = t.closest("[data-token]"); if (row && !t.closest("a")) return openBottle(Number(row.dataset.token));
+    if (t === $("#overlay")) closeDialog();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !$("#overlay").hidden) closeDialog();
+    if (ev.key === "Enter" && ev.target.matches("[data-token]")) openBottle(Number(ev.target.dataset.token));
+  });
+  for (const id of ["#searchInput", "#saleFilter", "#sortSelect"]) $(id).addEventListener("input", () => renderMarket());
+  $("#qrFile").addEventListener("change", (ev) => { const f = ev.target.files?.[0]; if (f) decodeQrFile(f); ev.target.value = ""; });
+  $("#settingsBtn").addEventListener("click", openSettings);
+  $("#kbChip").addEventListener("click", () => switchView("bank"));
+  $("#identitySelect").addEventListener("change", (ev) => {
+    const c = app.chain;
+    if (c.kind === "demo") { c.account = c.people[ev.target.value].address; } else c.useDev(Number(ev.target.value));
+    refresh();
+  });
+  $("#connectBtn").addEventListener("click", connectWallet);
+  window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (VIEWS.includes(v) && v !== app.view) switchView(v); });
+  setInterval(() => { for (const el of $$("[data-countdown]")) el.textContent = countdown(Number(el.dataset.countdown)); }, 1000);
+}
+async function boot() {
+  bindEvents();
+  IcReader.onState = renderReaderState;
+  IcReader.onCard = onCardTap;
+  IcReader.restore();
+  const s = settings(), cid = Number(new URLSearchParams(location.search).get("chain") ?? s.chainId ?? CONFIG.defaultChainId);
+  let chain = null;
+  try { if (window.ethers && ABI) chain = await EvmChain.tryConnect(cid); } catch (e) { console.info("鏈上模式不可用，改用展示模式：", e?.message ?? e); }
+  app.chain = chain ?? new DemoChain();
+  try { await app.chain.init(); } catch (e) { console.warn(e); if (app.chain.kind === "evm") { app.chain = new DemoChain(); await app.chain.init(); } }
+  if (app.chain.kind === "evm" && app.chain.isLocal) app.chain.useDev(2);
+  app.chain.on(() => refresh());
+  const v = location.hash.slice(1);
+  switchView(VIEWS.includes(v) ? v : "market");
+  await refresh();
+  const qs = new URLSearchParams(location.search);
+  if (qs.has("picc_data") || qs.has("e")) { $("#sunInput").value = location.href; handleSunInput(location.href); }
+  else if (qs.has("token")) openBottle(Number(qs.get("token")));
+  if (app.chain.kind === "evm") setInterval(async () => { try { if (await app.chain.syncLogs()) { app.snap = await app.chain.snapshot(); render(); } } catch { /* 下次再試 */ } }, CONFIG.pollMs);
+}
+if (window.ethers) boot();
+else { document.querySelector("#main .main-inner").insertAdjacentHTML("afterbegin", `<div class="banner"><p>無法載入 ethers.js（請確認網路連線），頁面功能暫停。</p></div>`); }
+</script>
+</body>
+</html>
